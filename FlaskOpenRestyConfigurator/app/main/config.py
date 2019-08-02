@@ -29,3 +29,4 @@ config_by_name = dict(
 )
 
 key = Config.SECRET_KEY
+api_key = os.getenv("FORC_API_KEY")
