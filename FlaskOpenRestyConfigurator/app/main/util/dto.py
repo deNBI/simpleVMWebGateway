@@ -39,3 +39,10 @@ class TemplateDto:
         'version': fields.String(required=True, description="Version of this template.", example="v13")
     })
 
+
+class UtilsDto:
+    api = Namespace('utils', description="Misc endpoints.", authorizations=authorizations)
+
+    version = api.model('Version', {
+        'version': fields.String(required=True, description="Current running version of this service framework", example="v1.0.0")
+    })

@@ -1,7 +1,10 @@
 from flask_restplus import Resource
 from ..util.auth import auth_required
 from ..util.dto import BackendDto
+from ..service import backend as backend_service
 
+
+from werkzeug.exceptions import BadRequest
 
 api = BackendDto.api
 _backend = BackendDto.backend
@@ -11,12 +14,16 @@ _createBackend = BackendDto.createBackend
 @api.route('/')
 class BackendsList(Resource):
     @api.doc("List of all registred backends", security="apikey")
-    @api.marshal_list_with(_backend)
+    @api.marshal_list_with(_backend, skip_none=True)
+    @api.response(400, 'Invalid Request')
     @api.response(401, 'Authorization error')
     @auth_required
     def get(self):
         """List all registered users"""
-        return "blabla"
+        backends = backend_service.getBackends()
+        if not backends:
+            raise BadRequest
+        return backends
 
 
     @api.doc("Register a new oidc protected backend", security="apikey")

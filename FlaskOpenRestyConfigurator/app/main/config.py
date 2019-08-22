@@ -30,3 +30,7 @@ config_by_name = dict(
 
 key = Config.SECRET_KEY
 api_key = os.getenv("FORC_API_KEY")
+
+backend_path = '/home/ubuntu/forc_config/backends/'
+templates_path = '/home/ubuntu/forc_config/templates/'
+
