@@ -22,7 +22,6 @@ class BackendDto:
         'template_version': fields.String(required=True, description="Template Version", example="v1")
     })
 
-
     createBackend = api.model('CreateBackend', {
         'owner': fields.String(required=True, description="ELIXIR user who owns this backend. Field without @elixir.org suffix", example="21894723853fhdzug92"),
         'user_key_url': fields.String(required=True, description="User set location url prefix", example="myFavoriteRstudio"),
@@ -31,4 +30,12 @@ class BackendDto:
     })
 
 
+# General DTO for a template json object
+class TemplateDto:
+    api = Namespace('templates', description="All template related endpoints. Templates are used to generate OpenResty location configurations.", authorizations=authorizations)
+
+    template = api.model('Template', {
+        'name': fields.String(required=True, description="Name of the template.", example="rstudio"),
+        'version': fields.String(required=True, description="Version of this template.", example="v13")
+    })
 

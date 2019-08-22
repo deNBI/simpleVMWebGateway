@@ -75,7 +75,7 @@ class BackendsByTemplate(Resource):
     @api.response(401, 'Authorization error')
     @api.response(404, 'Template not found.')
     @auth_required
-    def get(self, owner):
+    def get(self, template):
         """Returns a list of all backends based on a specific template."""
         pass
 
