@@ -2,9 +2,10 @@ from flask import request
 from werkzeug.exceptions import Unauthorized, Forbidden
 
 from ..config import api_key as registred_api_key
+from functools import wraps
 
 def auth_required(func):
-    #func = api.doc(security='apikey')(func)
+    @wraps(func)
     def check_auth(*args, **kwargs):
         if 'X-API-KEY' not in request.headers:
             raise Unauthorized('No API Key provided')

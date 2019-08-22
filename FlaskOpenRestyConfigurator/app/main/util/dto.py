@@ -2,7 +2,6 @@ from flask_restplus import Namespace, fields
 
 
 
-
 authorizations = {
     'apikey': {
         'type': 'apiKey',
@@ -13,7 +12,7 @@ authorizations = {
 
 # General DTO for a backend json object
 class BackendDto:
-    api = Namespace('backend', description="Backend related operations", authorizations=authorizations)
+    api = Namespace('backends', description="All backend related resources. Backends are generated nginx location snippets, generated from templates.", authorizations=authorizations)
 
     backend = api.model('Backend', {
         'id': fields.Integer(required=True, description="Unique ID of backend", example="78345"),
@@ -22,6 +21,7 @@ class BackendDto:
         'template': fields.String(required=True, description="Used backend template", example="rstudio"),
         'template_version': fields.String(required=True, description="Template Version", example="v1")
     })
+
 
     createBackend = api.model('CreateBackend', {
         'owner': fields.String(required=True, description="ELIXIR user who owns this backend. Field without @elixir.org suffix", example="21894723853fhdzug92"),
