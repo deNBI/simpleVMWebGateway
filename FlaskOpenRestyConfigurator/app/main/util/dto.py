@@ -25,6 +25,7 @@ class BackendDto:
     createBackend = api.model('CreateBackend', {
         'owner': fields.String(required=True, description="ELIXIR user who owns this backend. Field without @elixir.org suffix", example="21894723853fhdzug92"),
         'user_key_url': fields.String(required=True, description="User set location url prefix", example="myFavoriteRstudio"),
+        'upstream_url': fields.String(required=True, description="Inject the full url (with protocol) for the real location of the backend service in the template.", example="http://localhost:7001/"),
         'template': fields.String(required=True, description="Used backend template", example="rstudio"),
         'template_version': fields.String(required=True, description="Template Version", example="v1")
     })

@@ -4,7 +4,7 @@ from ..util.dto import BackendDto
 from ..service import backend as backend_service
 
 
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, NotFound
 
 api = BackendDto.api
 _backend = BackendDto.backend
@@ -22,7 +22,7 @@ class BackendsList(Resource):
         """List all registered users"""
         backends = backend_service.getBackends()
         if not backends:
-            raise BadRequest
+            return []
         return backends
 
 
@@ -31,6 +31,7 @@ class BackendsList(Resource):
     @api.response(400, 'Validation error')
     @api.response(401, 'Authorization error')
     @api.marshal_with(_backend, code=201, description="Backend created")
+    @api.expect(_createBackend)
     @auth_required
     def post(self):
         """Register a new oidc protected backend"""
@@ -44,19 +45,25 @@ class Backend(Resource):
     @api.response(404, 'Backend not found')
     @api.marshal_with(_backend, code=201, description="Backend found.")
     @auth_required
-    def get(self):
+    def get(self, backendID):
         """Returns a specific backend by id"""
-        pass
+        backends = backend_service.getBackends()
+        if not backends:
+            raise BadRequest
+        for backend in backends:
+            if int(backend["id"]) == int(backendID):
+                return backend
+        raise NotFound
 
     @api.doc("Specified backend by id", security="apikey", params={"backendID" : "ID of backend to delete."})
     @api.response(400, 'Invalid request')
     @api.response(401, 'Authorization error')
     @api.response(404, 'Backend not found')
-    @api.marshal_with(_backend, code=201, description="Backend deleted.")
+    @api.response(200, 'Backend deleted.')
     @auth_required
-    def delete(self):
+    def delete(self, backendID):
         """Deletes a specific backend by id"""
-        pass
+        backend_service.deleteBackend(backendID)
 
 
 
@@ -71,7 +78,17 @@ class BackendsByOwner(Resource):
     @auth_required
     def get(self, owner):
         """Returns a list of all owner specified backends."""
-        pass
+        backends = backend_service.getBackends()
+        if not backends:
+            raise BadRequest
+        backendsByOwner = []
+        for backend in backends:
+            if backend["owner"] == owner:
+                backendsByOwner.append(backend)
+        if backendsByOwner:
+            return backendsByOwner
+        else:
+            raise NotFound
 
 
 @api.route('/byTemplate/<string:template>')
@@ -84,7 +101,17 @@ class BackendsByTemplate(Resource):
     @auth_required
     def get(self, template):
         """Returns a list of all backends based on a specific template."""
-        pass
+        backends = backend_service.getBackends()
+        if not backends:
+            raise BadRequest
+        backendsByTemplate = []
+        for backend in backends:
+            if backend["template"] == template:
+                backendsByTemplate.append(backend)
+        if backendsByTemplate:
+            return backendsByTemplate
+        else:
+            raise NotFound("No backends with such template found.")
 
 
 

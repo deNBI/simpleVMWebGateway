@@ -1,6 +1,8 @@
 from flask_restplus import Resource
 from ..util.auth import auth_required
 from ..util.dto import TemplateDto
+from ..service import template as template_service
+from werkzeug.exceptions import BadRequest
 
 api = TemplateDto.api
 _template = TemplateDto.template
@@ -9,12 +11,15 @@ _template = TemplateDto.template
 @api.route('/')
 class TemplatesList(Resource):
     @api.doc("List of all found templates", security="apikey")
-    @api.marshal_list_with(_template)
+    @api.marshal_list_with(_template, skip_none=True)
     @api.response(401, 'Authorization error')
     @auth_required
     def get(self):
         """List all registered templates"""
-        return "blabla"
+        templates = template_service.getTemplates()
+        if not templates:
+            return []
+        return templates
 
 
 @api.route('/<string:templateName>')
