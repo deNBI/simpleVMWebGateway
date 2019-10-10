@@ -22,4 +22,4 @@ def validatePostBackendContent(payload):
         return {"error" : "This is not a valid upstream url. Example: http://129.70.168.5:3000"}
 
     return {"status" : "okay"}
-    #todo check if template wit version exists here
+
