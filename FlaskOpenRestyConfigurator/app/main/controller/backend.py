@@ -30,12 +30,17 @@ class BackendsList(Resource):
     @api.expect(_createBackend, validate=True)
     @api.response(400, 'Validation error')
     @api.response(401, 'Authorization error')
-    @api.marshal_with(_backend, code=201, description="Backend created")
+    @api.marshal_with(_backend, code=200, description="Backend created")
     @api.expect(_createBackend)
     @auth_required
     def post(self):
         """Register a new oidc protected backend"""
-        pass
+        if api.payload:
+            modifiedPayload = backend_service.createBackend(api.payload)
+            return modifiedPayload
+        else:
+            raise BadRequest
+
 
 @api.route('/<int:backendID>')
 class Backend(Resource):
@@ -43,7 +48,7 @@ class Backend(Resource):
     @api.response(400, 'Invalid request')
     @api.response(401, 'Authorization error')
     @api.response(404, 'Backend not found')
-    @api.marshal_with(_backend, code=201, description="Backend found.")
+    @api.marshal_with(_backend, code=200, description="Backend found.")
     @auth_required
     def get(self, backendID):
         """Returns a specific backend by id"""
@@ -64,6 +69,7 @@ class Backend(Resource):
     def delete(self, backendID):
         """Deletes a specific backend by id"""
         backend_service.deleteBackend(backendID)
+        return {"message" : "Backend deleted: " + str(backendID)}
 
 
 

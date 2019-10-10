@@ -2,7 +2,6 @@ from flask_restplus import Resource
 from ..util.auth import auth_required
 from ..util.dto import TemplateDto
 from ..service import template as template_service
-from werkzeug.exceptions import BadRequest
 
 api = TemplateDto.api
 _template = TemplateDto.template

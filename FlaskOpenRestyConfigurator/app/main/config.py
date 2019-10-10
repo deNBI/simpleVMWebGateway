@@ -12,6 +12,7 @@ class DevelopmentConfig(Config):
     # SQLALCHEMY_DATABASE_URI = postgres_local_base
     DEBUG = True
     RESTPLUS_MASK_SWAGGER = False
+    SWAGGER_BASEPATH = '/config'
 
 class TestingConfig(Config):
     DEBUG = True
