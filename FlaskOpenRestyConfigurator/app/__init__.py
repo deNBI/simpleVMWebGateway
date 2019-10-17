@@ -5,11 +5,13 @@ from .main.controller.backend import api as backend_ns
 from .main.controller.template import api as template_ns
 from .main.controller.utils import api as utils_ns
 
+from .main.config import FORC_VERSION
+
 blueprint = Blueprint('api', __name__)
 
 api = Api(blueprint,
           title='Flask OpenResty Configurator (FORC)',
-          version='0.1a',
+          version=FORC_VERSION,
           description="Endpoint for dynamic configuration of a running OpenResty server, acting as a ReverseProxy manager.")
 
 api.add_namespace(backend_ns, path='')

@@ -1,9 +1,11 @@
 import os
 
+FORC_VERSION = '0.1a'
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    SECRET_KEY = os.getenv('SECRET_KEY', 'my_precious_secret_key')
+    SECRET_KEY = os.getenv('FORC_SECRET_KEY', 'my_precious_secret_key')
     DEBUG = False
 
 
@@ -29,9 +31,15 @@ config_by_name = dict(
     prod=ProductionConfig
 )
 
+
+
 key = Config.SECRET_KEY
 api_key = os.getenv("FORC_API_KEY")
 
-backend_path = '/home/ubuntu/forc_config/backends/'
-templates_path = '/home/ubuntu/forc_config/templates/'
+#todo read from environment variable
+
+backend_path = os.getenv("FORC_BACKEND_PATH")
+templates_path = os.getenv("FORC_TEMPLATE_PATH")
+#backend_path = '/home/ubuntu/forc_config/backends/'
+#templates_path = '/home/ubuntu/forc_config/templates/'
 

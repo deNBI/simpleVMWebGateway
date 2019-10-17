@@ -1,5 +1,6 @@
 from flask_restplus import Resource
 from ..util.dto import UtilsDto
+from ..config import FORC_VERSION
 
 
 api = UtilsDto.api
@@ -12,4 +13,4 @@ class Version(Resource):
     @api.response(400, 'Invalid Request')
     def get(self):
         """Returns the current version of this service framework."""
-        return "blabla"
+        return {"version" : FORC_VERSION}
