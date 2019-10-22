@@ -23,7 +23,7 @@ Make sure that your Webserver has met the following requirements:
 * HaProxy
 * Python3 with pip3
 * SSL Cert and Key matching the Webserver URL. (Certbot, custom certs...)
-* User running this Service needs rights to reload OpenResty.
+* User running this Service needs sudo permissions to reload OpenResty.
 
 ### Quick Start
 
