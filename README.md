@@ -51,6 +51,15 @@ Depending on your configuration, you can make a test call with:
 curl -X GET "http://localhost:5000/backends/" -H "accept: application/json" -H "X-API-KEY: $APIKEY"
 ```
 
+### Install and Configure OpenResty
+
+See [this](examples/openresty_configuration.md) guide.
+
+
+### Templating
+
+See [this](examples/templating_guide.md) guide on how to create and place valid configs in FORC.
+
 ### REST Documentation
 
 An internal Swagger documentation is available internally in the FORC Service by accessing following URL via browser: `http://localhost:5000/`.
