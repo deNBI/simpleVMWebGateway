@@ -1,0 +1,12 @@
+---
+
+- name: Install HAProxy
+  apt:
+    name: haproxy
+    state: latest
+
+
+- name: Make sure that HAProxy is running
+  systemd:
+    name: haproxy
+    state: started

@@ -1,0 +1,32 @@
+---
+
+- name: Install OpenResty pre-required packages
+  apt:
+    name:
+      - wget
+      - gnupg
+      - ca-certificates
+      - software-properties-common
+    state: latest
+
+- name: Register OpenResty PGP Key
+  apt_key:
+    url: https://openresty.org/package/pubkey.gpg
+    state: present
+
+- name: Add OpenResty APT repository
+  apt_repository:
+    repo: deb http://openresty.org/package/ubuntu bionic main
+    state: present
+    update_cache: yes
+
+- name: Install OpenResty
+  apt:
+    name: openresty
+    state: latest
+
+- name: Install lua-resty-openidc
+  shell: "opm install zmartzone/lua-resty-openidc"
+  args:
+    creates: /usr/local/openresty/site/lualib/resty/openidc.lua
+

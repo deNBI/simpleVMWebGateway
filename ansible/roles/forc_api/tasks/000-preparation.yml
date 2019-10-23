@@ -1,0 +1,17 @@
+---
+
+- fail:
+    msg: "The variable FORC_SECRET_KEY is not defined."
+  when: FORC_SECRET_KEY is undefined or FORC_SECRET_KEY == ""
+
+- fail:
+    msg: "The variable FORC_API_KEY is not defined."
+  when: FORC_API_KEY is undefined or FORC_API_KEY == ""
+
+- fail:
+    msg: "The variable FORC_BACKEND_PATH is not defined."
+  when: FORC_BACKEND_PATH is undefined or FORC_BACKEND_PATH == ""
+
+- fail:
+    msg: "The variable FORC_TEMPLATE_PATH is not defined."
+  when: FORC_TEMPLATE_PATH is undefined or FORC_TEMPLATE_PATH == ""
