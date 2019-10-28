@@ -5,7 +5,7 @@
   tags: ['forc_preparation']
 
 - include: "005-packages.yml"
-  tags: ['forc_apt']
+  tags: ['forc_packages']
 
 
 

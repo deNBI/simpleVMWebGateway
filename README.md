@@ -20,7 +20,6 @@ Make sure that your Webserver has met the following requirements:
 * Ubuntu 18.04 (other debian based may also work)
 * [OpenResty](http://openresty.org/en/) with OPM installed
 * [OIDC-Plugin](https://github.com/zmartzone/lua-resty-openidc) installed via OPM
-* HaProxy
 * Python3 with pip3
 * SSL Cert and Key matching the Webserver URL. (Certbot, custom certs...)
 * User running this Service needs sudo permissions to reload OpenResty.
@@ -64,5 +63,7 @@ See [this](examples/templating_guide.md) guide on how to create and place valid 
 
 An internal Swagger documentation is available internally in the FORC Service by accessing following URL via browser: `http://localhost:5000/`.
 
+A non-interactive Documentation is also available [here](https://app.swaggerhub.com/apis-docs/awalende/flask-open_resty_configurator_forc/0.1a).
+
 ### Ansible Role
-An ansible role for setting up a whole FORC environment will follow soon...
+An ansible role is included in this repo [here](ansible/).

@@ -1,7 +1,7 @@
 galaxy_info:
-  author: your name
-  description: your description
-  company: your company (optional)
+  author: Alex Walender
+  description: This installs OpenResty and FORC on a baremetal Ubuntu 18 system.
+  company: de.NBI
 
   # If the issue tracker for your role is not on github, uncomment the
   # next line and provide a value
