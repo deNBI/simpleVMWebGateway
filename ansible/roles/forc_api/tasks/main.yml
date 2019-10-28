@@ -1,0 +1,17 @@
+---
+# tasks file for forc_api
+
+- include: "000-preparation.yml"
+  tags: ['forc_preparation']
+
+- include: "005-packages.yml"
+  tags: ['forc_apt']
+
+
+
+#- include: "015-forc.yml"
+#  tags: ['forc_forc']
+
+- include: "020-openresty.yml"
+  tags: ['forc_openresty']
+

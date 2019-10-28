@@ -1,0 +1,21 @@
+---
+# vars file for forc_api
+
+
+
+
+
+
+FORC_SECRET_KEY: ""
+FORC_API_KEY: ""
+FORC_BACKEND_PATH: "/var/forc/backend_path/"
+FORC_TEMPLATE_PATH: "/var/forc/template_path/"
+FORC_SERVICE_PORT: 5000
+DOMAIN: ""
+
+CERTBOT_USED: "yes"
+
+FORC_OIDC_REDIRECT_URI: "https://reverseproxy.bibiserv.projects.bi.denbi.de/redirect_uri"
+FORC_OIDC_DISCOVERY_URL: "https://login.elixir-czech.org/oidc/.well-known/openid-configuration"
+FORC_OIDC_CLIENT_ID: "b649ab06-8633-4aaa-943e-fe97882c0039"
+FORC_OIDC_CLIENT_SECRET: "XXXXXXXXXXXX"
