@@ -1,9 +1,14 @@
 ---
 
-#- name: Clone forc repo
-#  git:
-#    repo: https://github.com/deNBI/simpleVMWebGateway.git
-#    dest: "{{ FORC_INSTALLATION_PATH }}"
+- name: Clone forc repo
+  git:
+    repo: https://github.com/deNBI/simpleVMWebGateway.git
+    dest: "{{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/"
+
+- name: Install requirements in a venv
+  pip:
+    requirements: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator/requirements.txt"
+    virtualenv: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator/venv"
 
 - name: Generate uwsgi config
   template:

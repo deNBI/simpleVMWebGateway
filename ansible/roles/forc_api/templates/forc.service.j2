@@ -14,6 +14,8 @@ WorkingDirectory={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway
 ExecStart=/usr/local/bin/uwsgi --ini uwsgi.ini
 
 
+ENVIRONMENT="PATH={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/venv/bin"
+
 Environment="FORC_BACKEND_PATH={{ FORC_BACKEND_PATH }}"
 Environment="FORC_TEMPLATE_PATH={{ FORC_TEMPLATE_PATH }}"
 Environment="FORC_API_KEY={{ FORC_API_KEY }}"
