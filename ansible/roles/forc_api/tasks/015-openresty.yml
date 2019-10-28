@@ -30,3 +30,14 @@
   args:
     creates: /usr/local/openresty/site/lualib/resty/openidc.lua
 
+- name: Generate OpenResty configuration
+  template:
+    src: nginx.conf.j2
+    dest: /etc/openresty/nginx.conf
+  register: openresty_config
+
+- name: Restart OpenResty on config change
+  systemd:
+    name: openresty
+    state: restarted
+  when: openresty_config is changed

@@ -1,0 +1,81 @@
+worker_processes  {{ OPENRESTY_WORKER_PROCESSES }};
+
+# /usr/local/openresty/nginx/logs/
+error_log  logs/error.log;
+error_log  logs/error.log  notice;
+error_log  logs/error.log  info;
+error_log  logs/error.log  debug;
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    #For some reason, nginx wants a hardcoded Name Resolver
+    resolver {{ OPENRESTY_DNS_SERVER }};
+    sendfile        on;
+    keepalive_timeout  65;
+    #LUA caches for various session modules
+    lua_shared_dict discovery 1m;
+    lua_shared_dict jwks 1m;
+    lua_code_cache off;
+
+     #Allow websockets by allowing general connection upgrade requests, theia needs websockets
+     map $http_upgrade $connection_upgrade {
+         default upgrade;
+        '' close;
+       }
+
+    #Create global LUA variable which keeps our ELIXIR AAI Configuration dict
+    init_by_lua_block {
+         opts2 = {
+                redirect_uri = "{{ FORC_OIDC_REDIRECT_URI }}",
+                discovery = "{{ FORC_OIDC_DISCOVERY_URL }}",
+                client_id = "{{ FORC_OIDC_CLIENT_ID }}",
+                client_secret = "{{ FORC_OIDC_CLIENT_SECRET }}",
+                logout_path = "/logout",
+                ssl_verify = "no"
+          }
+     }
+
+    #server {
+      #  listen 127.0.0.1:80 default_server;
+        #server_name reverseproxy.bibiserv.projects.bi.denbi.de;
+     #   return 301 https://$host$request_uri;
+    #}
+
+
+    server {
+        listen       127.0.0.1:6363;
+        #server_name  reverseproxy.bibiserv.projects.bi.denbi.de;
+        #ssl_certificate /etc/letsencrypt/live/reverseproxy.bibiserv.projects.bi.denbi.de/fullchain.pem;
+        #ssl_certificate_key /etc/letsencrypt/live/reverseproxy.bibiserv.projects.bi.denbi.de/privkey.pem;
+        set $session_secret {{ FORC_SECRET_KEY }};
+
+        location / {
+
+                access_by_lua_block {
+                -- Start actual openid authentication procedure
+                local res, err = require("resty.openidc").authenticate(opts2)
+                -- If it fails for some reason, escape via HTTP 500
+                if err then
+                        ngx.status = 500
+                        ngx.say(err)
+                        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+                end
+
+        }
+
+        }
+
+        #Load all dynamicaly created locations.
+        #include backends/*.conf;
+        include {{ FORC_BACKEND_PATH }}/*.conf;
+
+   error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+}

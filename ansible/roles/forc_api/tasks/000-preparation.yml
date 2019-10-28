@@ -15,3 +15,15 @@
 - fail:
     msg: "The variable FORC_TEMPLATE_PATH is not defined."
   when: FORC_TEMPLATE_PATH is undefined or FORC_TEMPLATE_PATH == ""
+
+- name: Create forc backend folders
+  file:
+    state: directory
+    path: "{{ FORC_BACKEND_PATH }}"
+    recurse: yes
+
+- name: Create forc template_path
+  file:
+    state: directory
+    path: "{{ FORC_TEMPLATE_PATH }}"
+    recurse: yes
