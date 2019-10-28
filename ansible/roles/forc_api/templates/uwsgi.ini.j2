@@ -1,0 +1,13 @@
+[uwsgi]
+chdir = {{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator
+module = manage:app
+
+master = true
+processes = 5
+logto = /var/log/forc.log
+
+socket = /var/run/forc.sock
+vacuum = true
+
+chmod-socket = 660
+buffer-size = 65535

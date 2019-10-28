@@ -39,18 +39,33 @@ http {
           }
      }
 
-    #server {
-      #  listen 127.0.0.1:80 default_server;
-        #server_name reverseproxy.bibiserv.projects.bi.denbi.de;
-     #   return 301 https://$host$request_uri;
-    #}
 
 
     server {
-        listen       127.0.0.1:6363;
-        #server_name  reverseproxy.bibiserv.projects.bi.denbi.de;
-        #ssl_certificate /etc/letsencrypt/live/reverseproxy.bibiserv.projects.bi.denbi.de/fullchain.pem;
-        #ssl_certificate_key /etc/letsencrypt/live/reverseproxy.bibiserv.projects.bi.denbi.de/privkey.pem;
+        listen {{ FORC_SERVICE_PORT }} ssl;
+        ssl_certificate  /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
+        ssl_certificate_key  /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
+
+        location / {
+                include uwsgi_params;
+                uwsgi_pass unix:/var/run/forc.sock;
+                }
+
+        }
+
+
+    server {
+        listen 0.0.0.0:80 default_server;
+        server_name {{ DOMAIN }};
+        return 301 https://$host$request_uri;
+    }
+
+
+    server {
+        listen 0.0.0.0:443 ssl;
+        server_name  {{ DOMAIN }};
+        ssl_certificate /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
         set $session_secret {{ FORC_SECRET_KEY }};
 
         location / {
@@ -70,12 +85,11 @@ http {
         }
 
         #Load all dynamicaly created locations.
-        #include backends/*.conf;
         include {{ FORC_BACKEND_PATH }}/*.conf;
 
-   error_page   500 502 503 504  /50x.html;
-        location = /50x.html {
-            root   html;
-        }
+       error_page   500 502 503 504  /50x.html;
+            location = /50x.html {
+                root   html;
+            }
     }
 }
