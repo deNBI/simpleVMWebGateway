@@ -1,6 +1,22 @@
 ---
 
-- name: Clone forc repo
-  git:
-    repo: https://github.com/deNBI/simpleVMWebGateway.git
-    dest: "{{ FORC_INSTALLATION_PATH }}"
+#- name: Clone forc repo
+#  git:
+#    repo: https://github.com/deNBI/simpleVMWebGateway.git
+#    dest: "{{ FORC_INSTALLATION_PATH }}"
+
+- name: Generate uwsgi config
+  template:
+    src: uwsgi.ini.j2
+    dest: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/uwsgi.ini"
+
+- name: Generate systemd unit file for forc
+  template:
+    src: forc.service.j2
+    dest: /etc/systemd/system/forc.service
+
+- name: Reload systemd daemon and enable forc
+  systemd:
+    service: forc
+    daemon_reload: yes
+    state: restarted

@@ -1,0 +1,23 @@
+[Unit]
+Description=uWSGI instance to serve the FlaskOpenResty Configurator
+After=network.target
+
+[Service]
+User=root
+Group=root
+
+KillSignal=SIGQUIT
+Type=notify
+NotifyAccess=all
+
+WorkingDirectory={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway
+ExecStart=/usr/local/bin/uwsgi --ini uwsgi.ini
+
+
+Environment="FORC_BACKEND_PATH={{ FORC_BACKEND_PATH }}"
+Environment="FORC_TEMPLATE_PATH={{ FORC_TEMPLATE_PATH }}"
+Environment="FORC_API_KEY={{ FORC_API_KEY }}"
+
+
+[Install]
+WantedBy=multi-user.target

@@ -9,8 +9,8 @@
 
 
 
-#- include: "015-forc.yml"
-#  tags: ['forc_forc']
+- include: "015-forc.yml"
+  tags: ['forc_forc']
 
 - include: "020-openresty.yml"
   tags: ['forc_openresty']
