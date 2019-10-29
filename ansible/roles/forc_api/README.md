@@ -1,38 +1,91 @@
 Role Name
 =========
 
-A brief description of the role goes here.
+This role installs the [FlaskOpenRestyConfigurator](https://github.com/deNBI/simpleVMWebGateway) and optionally OpenResty
+with all needed plugins and SSL certs.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Needed requirements:
+
+* Ubuntu 18.04 Bionic
+* Access to instance via standard ports (80, 443)
+* DNS Name for autogenerating ssl certs via certbot.
+* OpenID Connect client.
+
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+**vars/main.yml**
+
+| Variable                  | Description           | Default                                                                       | Mandatory |
+| -------------             |-------------          |            -----                                                              |     ---   |
+| FORC_SECRET_KEY           | Encryption key for flask service |                                                                    | Yes       |
+| FORC_API_KEY              | X-Auth Key for accessing REST API                                     |                               | Yes       |
+| FORC_BACKEND_PATH         | Filesystem path in where FORC generates NGINX config snippets to      |    /var/forc/backend_path/    |   Yes     |
+| FORC_TEMPLATE_PATH        | Filesystem path which locates template files for FORC                 | /var/forc/template_path/      | Yes       |
+| FORC_SERVICE_PORT         | The Port on which OpenResty will bind forc to.                        | 5000                          | Yes       |
+| FORC_OIDC_DISCOVERY_URL   | OIDC Credentials                                                      | https://login.elixir-czech.org/oidc/.well-known/openid-configuration  | Yes |
+| FORC_OIDC_CLIENT_ID       | OIDC Credentials                                                      |                               | Yes       |
+| FORC_OIDC_CLIENT_SECRET   | OIDC Credentials                                                      |                               | Yes       |
+| DOMAIN                    | The domain name of the webserver serving forc and OpenResty           |                               | Yes       |
+| CERTBOT_USED              | Set this to no if you don't use certbot for autogenerating ssl certs. | yes                           | No        |
+| INSTALL_OPENRESTY         | Set this to no if you only want to install forc as uWSGI app.         | yes                           | No        |
+
+**defaults/main.yml**
+
+| Variable                  | Description           | Default                     | Mandatory |
+| -------------             |-------------          |            -----           |     ---   |
+| OPENRESTY_WORKER_PROCESSES | Number of worker processes for the OpenResty webserver. | 10 | Yes |
+| OPENRESTY_DNS_SERVERS     | Resolver needed by OpenResty  | 8.8.8.8   | Yes |
+| FORC_INSTALLATION_PATH    | Path on where forc will be installed to | /opt/   | Yes |
+
+
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+If auto generating certs is wanted:
+
+* geerlingguy.certbot 
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+To install OpenResty+certbot+FORC:
 
-    - hosts: servers
+    - hosts: all
+      become: yes
+      vars:
+        domain: reverseproxy.bibiserv.projects.bi.denbi.de
+
       roles:
-         - { role: username.rolename, x: 42 }
+        - role: geerlingguy.certbot
+          certbot_admin_email: mail@mail.de
+          certbot_create_if_missing: true
+          certbot_create_standalone_stop_services: []
+
+          certbot_certs:
+          - domains:
+            - "{{ domain }}"
+
+        - role: forc_api
+          FORC_SECRET_KEY: fdhtzzu45z34t32g24f43
+          FORC_API_KEY: vcnufez3jf39wvfngv0
+          FORC_OIDC_CLIENT_ID: fsduiofgjwepogjerohigjeroigjer
+          FORC_OIDC_CLIENT_SECRET: fmsdgndsogijwsgjtdfogjreowigj
+          DOMAIN: "{{ domain }}"
 
 License
 -------
 
-BSD
+Apache 2.0
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Alex Walender
+
+de.NBI Cloud Bielefeld

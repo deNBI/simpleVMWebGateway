@@ -1,21 +1,33 @@
 ---
 # vars file for forc_api
 
-
-
-
-
-
-FORC_SECRET_KEY: ""
-FORC_API_KEY: ""
-FORC_BACKEND_PATH: "/var/forc/backend_path/"
-FORC_TEMPLATE_PATH: "/var/forc/template_path/"
-FORC_SERVICE_PORT: 5000
+# Set the domain on where your service is reachable. This must match the configuration of your OIDC client.
+# Ex: reverseproxy.bibiserv.projects.bi.denbi.de
 DOMAIN: ""
 
+# Protect the FORC API endpoints via key header (X-API-KEY). This field needs to be set with a strong secret.
+FORC_API_KEY: ""
+
+# A key which OpenResty uses to encrypt sessions. This field needs to be set with a strong secret.
+FORC_SECRET_KEY: ""
+
+# The path on where forc will place nginx config snippets (backends). This must match with the include directive in
+# OpenResty. This role will create the paths if not existing.
+FORC_BACKEND_PATH: "/var/forc/backend_path/"
+
+# The path on where forc will read jinja2 templates from. This role will create the paths if not existing.
+FORC_TEMPLATE_PATH: "/var/forc/template_path/"
+
+# The Port on which OpenResty will bind forc to.
+FORC_SERVICE_PORT: 5000
+
+# Set this to no if you don't use certbot for autogenerating ssl certs.
 CERTBOT_USED: "yes"
 
-FORC_OIDC_REDIRECT_URI: "https://reverseproxy.bibiserv.projects.bi.denbi.de/redirect_uri"
+# Set this to no if you only want to install forc as uWSGI app.
+INSTALL_OPENRESTY: "yes"
+
+# OIDC Credentials.
 FORC_OIDC_DISCOVERY_URL: "https://login.elixir-czech.org/oidc/.well-known/openid-configuration"
-FORC_OIDC_CLIENT_ID: "b649ab06-8633-4aaa-943e-fe97882c0039"
-FORC_OIDC_CLIENT_SECRET: "XXXXXXXXXXXX"
+FORC_OIDC_CLIENT_ID: ""
+FORC_OIDC_CLIENT_SECRET: ""

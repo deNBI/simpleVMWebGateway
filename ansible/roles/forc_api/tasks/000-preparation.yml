@@ -27,9 +27,3 @@
     state: directory
     path: "{{ FORC_TEMPLATE_PATH }}"
     recurse: yes
-
-- name: Build concated ssl key
-  shell: "cat /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem | tee /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem /etc/letsencrypt/live/{{ DOMAIN }}/{{ DOMAIN }}.pem"
-  args:
-    creates: "/etc/letsencrypt/live/{{ DOMAIN }}/{{ DOMAIN }}.pem"
-  when: CERTBOT_USED == "yes"

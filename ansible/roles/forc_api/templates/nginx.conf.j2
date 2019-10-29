@@ -30,7 +30,7 @@ http {
     #Create global LUA variable which keeps our ELIXIR AAI Configuration dict
     init_by_lua_block {
          opts2 = {
-                redirect_uri = "{{ FORC_OIDC_REDIRECT_URI }}",
+                redirect_uri = "https://{{ DOMAIN }}/redirect_uri",
                 discovery = "{{ FORC_OIDC_DISCOVERY_URL }}",
                 client_id = "{{ FORC_OIDC_CLIENT_ID }}",
                 client_secret = "{{ FORC_OIDC_CLIENT_SECRET }}",

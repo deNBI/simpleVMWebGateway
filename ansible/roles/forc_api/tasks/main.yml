@@ -7,11 +7,10 @@
 - include: "005-packages.yml"
   tags: ['forc_packages']
 
-
-
 - include: "015-forc.yml"
   tags: ['forc_forc']
 
 - include: "020-openresty.yml"
   tags: ['forc_openresty']
+  when: INSTALL_OPENRESTY == 'yes'
 
