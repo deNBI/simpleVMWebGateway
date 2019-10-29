@@ -1,7 +1,7 @@
 [uwsgi]
 chdir = {{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator
 module = manage:app
-
+venv = {{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator/venv/
 master = true
 processes = 5
 logto = /var/log/forc.log

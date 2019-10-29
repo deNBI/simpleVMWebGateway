@@ -9,6 +9,7 @@
   pip:
     requirements: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator/requirements.txt"
     virtualenv: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator/venv"
+    virtualenv_python: python3
 
 - name: Generate uwsgi config
   template:
