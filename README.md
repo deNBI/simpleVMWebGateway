@@ -66,4 +66,4 @@ An internal Swagger documentation is available internally in the FORC Service by
 A non-interactive Documentation is also available [here](https://app.swaggerhub.com/apis-docs/awalende/flask-open_resty_configurator_forc/0.1a).
 
 ### Ansible Role
-An ansible role is included in this repo [here](ansible/).
+An ansible role is included in this repo [here](ansible/roles/forc_api/README.md).
