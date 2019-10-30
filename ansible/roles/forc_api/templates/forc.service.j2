@@ -14,7 +14,7 @@ WorkingDirectory={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway
 ExecStart=/usr/local/bin/uwsgi --ini uwsgi.ini
 
 
-Environment="PATH={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/FlaskOpenRestyConfigurator/venv/bin"
+Environment="PATH={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/FlaskOpenRestyConfigurator/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
 
 Environment="FORC_BACKEND_PATH={{ FORC_BACKEND_PATH }}"
 Environment="FORC_TEMPLATE_PATH={{ FORC_TEMPLATE_PATH }}"
