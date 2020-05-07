@@ -1,5 +1,5 @@
 import jinja2
-from ..config import templates_path
+from ..config import templates_path, backend_path
 import logging
 import os
 
@@ -29,6 +29,6 @@ def generateBackendByTemplate(payload, suffixNumber):
     template = templateEnv.get_template(assembledTemplateFileName)
 
     renderedBackend = template.render(key_url=payload['user_key_url'] + '_' + suffixNumber,
-                                      owner=payload['owner'],
+                                      owner=payload['owner'], backend_id=payload['id'], forc_backend_path=backend_path,
                                       location_url=payload['upstream_url'])
     return renderedBackend

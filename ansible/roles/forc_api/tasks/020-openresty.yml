@@ -30,6 +30,11 @@
   args:
     creates: /usr/local/openresty/site/lualib/resty/openidc.lua
 
+- name: Copy lua function scripts to backend path
+  copy:
+    src: "{{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/examples/scripts"
+    dst: "{{ FORC_BACKEND_PATH }}/scripts"
+
 - name: Generate OpenResty configuration
   template:
     src: nginx.conf.j2

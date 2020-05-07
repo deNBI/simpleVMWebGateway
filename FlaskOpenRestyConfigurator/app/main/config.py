@@ -39,6 +39,7 @@ api_key = os.getenv("FORC_API_KEY")
 #todo read from environment variable
 
 backend_path = os.getenv("FORC_BACKEND_PATH")
+user_path = "{0}/user".format(backend_path)
 templates_path = os.getenv("FORC_TEMPLATE_PATH")
 #backend_path = '/home/ubuntu/forc_config/backends/'
 #templates_path = '/home/ubuntu/forc_config/templates/'

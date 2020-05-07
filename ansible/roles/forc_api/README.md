@@ -51,10 +51,12 @@ If auto generating certs is wanted:
 
 * geerlingguy.certbot 
 
+A requirements.yml is placed in the ansible folder. If you have question on how a requirements.yml is used, please visit [here](https://galaxy.ansible.com/docs/using/installing.html#installing-multiple-roles-from-a-file).
+
 Example Playbook
 ----------------
 
-To install OpenResty+certbot+FORC:
+To install OpenResty+certbot(+renewal)+FORC:
 
     - hosts: all
       become: yes
@@ -66,6 +68,7 @@ To install OpenResty+certbot+FORC:
           certbot_admin_email: mail@mail.de
           certbot_create_if_missing: true
           certbot_create_standalone_stop_services: []
+          certbot_auto_renew_options: "--pre-hook "sudo systemctl stop openresty" --post-hook "sudo systemctl start openresty" --quiet --no-self-upgrade"
 
           certbot_certs:
           - domains:
