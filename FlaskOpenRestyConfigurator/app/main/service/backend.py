@@ -74,17 +74,21 @@ def createBackend(payload):
         raise BadRequest("ValidationError: " + str(validationStatus['error']))
     suffixNumber = generateSuffixNumber(payload['user_key_url'])
 
+    payload['id'] = str(random_with_N_digits(10))
+
     backendFileContents = templating.generateBackendByTemplate(payload, suffixNumber)
     if not backendFileContents:
         raise InternalServerError("Server was not able to template a new backend.")
 
-    payload['id'] = str(random_with_N_digits(10))
     payload['location_url'] = payload['user_key_url'] + "_" + suffixNumber
 
     #check for duplicates in filesystem
     backendPathFiles = os.listdir(backend_path)
     for file in backendPathFiles:
         match = re.fullmatch(fileRegex, file)
+        if not match:
+            logger.warning("Found a backend file with wrong naming, skipping it: " + str(file))
+            continue
         if match.group(1) == payload['id'] or match.group(3) == payload['location_url']:
             logger.error("Tried to create duplicate backend: " + payload['id'] + " and " + payload['location_url'])
             raise InternalServerError("Server tried to create duplicate backend.")

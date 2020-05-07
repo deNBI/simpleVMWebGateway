@@ -2,3 +2,9 @@
 site.yml
 site.retry
 venv/
+*__pycache__*
+vendor/
+env.sh
+env/
+ansible/inventory
+ansible/test.json

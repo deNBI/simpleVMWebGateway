@@ -2,6 +2,7 @@ from flask_restplus import Resource
 from ..util.auth import auth_required
 from ..util.dto import BackendDto
 from ..service import backend as backend_service
+from ..service import user as user_service
 
 
 from werkzeug.exceptions import BadRequest, NotFound
@@ -69,7 +70,8 @@ class Backend(Resource):
     def delete(self, backendID):
         """Deletes a specific backend by id"""
         backend_service.deleteBackend(backendID)
-        return {"message" : "Backend deleted: " + str(backendID)}
+        user_service.delete_all(backendID)
+        return {"message": "Backend deleted: " + str(backendID)}
 
 
 

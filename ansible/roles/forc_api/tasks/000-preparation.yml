@@ -27,3 +27,15 @@
     state: directory
     path: "{{ FORC_TEMPLATE_PATH }}"
     recurse: yes
+
+- name: Create lua scripts folders
+  file:
+    state: directory
+    path: "{{ FORC_BACKEND_PATH }}/scripts"
+    recurse: yes
+
+- name: Create backend users folders
+  file:
+    state: directory
+    path: "{{ FORC_BACKEND_PATH }}/users"
+    recurse: yes

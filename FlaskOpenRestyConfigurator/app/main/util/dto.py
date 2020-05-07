@@ -31,6 +31,15 @@ class BackendDto:
     })
 
 
+class UserDto:
+    api = Namespace('users', description="All user related endpoints. Users are people allowed to access a backend.", authorizations=authorizations)
+
+    createUser = api.model('createUser', {
+        'owner': fields.String(required=True, description="ELIXIR user who owns this backend. Field without @elixir.org suffix."),
+        'user': fields.String(required=True, description="ELIXIR user who will be added to this backend. Field without @elixir.org suffix.")
+    })
+
+
 # General DTO for a template json object
 class TemplateDto:
     api = Namespace('templates', description="All template related endpoints. Templates are used to generate OpenResty location configurations.", authorizations=authorizations)
