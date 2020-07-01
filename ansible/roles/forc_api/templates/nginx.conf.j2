@@ -36,7 +36,8 @@ http {
                 client_id = "{{ FORC_OIDC_CLIENT_ID }}",
                 client_secret = "{{ FORC_OIDC_CLIENT_SECRET }}",
                 logout_path = "/logout",
-                ssl_verify = "no"
+                ssl_verify = "no",
+                iat_slack = 600
           }
      }
 
