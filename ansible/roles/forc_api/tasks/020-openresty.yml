@@ -32,8 +32,8 @@
 
 - name: Copy lua function scripts to backend path
   copy:
-    src: "{{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/examples/scripts"
-    dest: "{{ FORC_BACKEND_PATH }}/scripts"
+    src: "{{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/examples/scripts/"
+    dest: "{{ FORC_BACKEND_PATH }}/scripts/"
     remote_src: yes
 
 - name: Generate OpenResty configuration
