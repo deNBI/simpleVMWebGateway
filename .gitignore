@@ -8,3 +8,4 @@ env.sh
 env/
 ansible/inventory
 ansible/test.json
+*/.python-version

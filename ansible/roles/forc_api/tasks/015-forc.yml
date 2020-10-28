@@ -21,6 +21,12 @@
     src: forc.service.j2
     dest: /etc/systemd/system/forc.service
 
+- name: Copy example templates
+  copy:
+    src: "{{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/examples/templates/"
+    dest: "{{ FORC_TEMPLATE_PATH }}"
+    remote_src: true
+
 - name: Reload systemd daemon and enable forc
   systemd:
     service: forc
