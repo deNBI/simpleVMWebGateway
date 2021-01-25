@@ -6,6 +6,7 @@ venv/
 vendor/
 env.sh
 env/
-ansible/inventory
+ansible/inventory*
+ansible/site*
 ansible/test.json
 */.python-version

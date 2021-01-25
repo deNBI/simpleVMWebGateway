@@ -1,7 +1,6 @@
 from flask_restplus import Namespace, fields
 
 
-
 authorizations = {
     'apikey': {
         'type': 'apiKey',
@@ -9,6 +8,7 @@ authorizations = {
         'name': 'X-API-KEY'
     }
 }
+
 
 # General DTO for a backend json object
 class BackendDto:
