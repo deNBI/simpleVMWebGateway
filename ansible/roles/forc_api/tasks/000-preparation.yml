@@ -31,11 +31,11 @@
 - name: Create lua scripts folders
   file:
     state: directory
-    path: "{{ FORC_BACKEND_PATH }}/scripts"
+    path: "{{ FORC_BACKEND_PATH }}scripts"
     recurse: yes
 
 - name: Create backend users folders
   file:
     state: directory
-    path: "{{ FORC_BACKEND_PATH }}/users"
+    path: "{{ FORC_BACKEND_PATH }}users"
     recurse: yes
