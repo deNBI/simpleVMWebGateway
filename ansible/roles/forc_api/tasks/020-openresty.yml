@@ -46,4 +46,5 @@
   systemd:
     name: openresty
     state: restarted
+    enabled: True
   when: openresty_config is changed

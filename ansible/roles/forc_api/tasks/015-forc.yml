@@ -32,4 +32,5 @@
   systemd:
     service: forc
     daemon_reload: yes
+    enabled: True
     state: restarted
