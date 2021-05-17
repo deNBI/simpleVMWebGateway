@@ -15,7 +15,7 @@ itsdangerous==1.1.0
 Jinja2==2.11.3
 jsonschema==3.2.0
 Mako==1.1.4
-MarkupSafe==1.1.1
+MarkupSafe==2.0.0
 pycparser==2.20
 PyJWT==2.1.0
 pyrsistent==0.17.3
