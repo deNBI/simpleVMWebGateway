@@ -5,6 +5,9 @@
 # Ex: reverseproxy.bibiserv.projects.bi.denbi.de
 DOMAIN: ""
 
+# Set branch to checkout.
+REPOSITORY_BRANCH: "master"
+
 # Protect the FORC API endpoints via key header (X-API-KEY). This field needs to be set with a strong secret.
 FORC_API_KEY: ""
 
