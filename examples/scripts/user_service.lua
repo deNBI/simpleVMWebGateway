@@ -1,7 +1,9 @@
-module("user_service", package.seeall)
+local user_service = {}
 
-function file_exists(file)
+function user_service.file_exists(file)
   local f = io.open(file, "rb")
   if f then f:close() end
   return f ~= nil
 end
+
+return user_service
