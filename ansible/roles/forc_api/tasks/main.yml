@@ -16,5 +16,5 @@
 
 - include: "025-backup.yml"
   tags: ["forc-backup"]
-  when: {{FORC_BACKUP_ENABLED}} == 'yes'
+  when: FORC_BACKUP_ENABLED == 'yes'
 
