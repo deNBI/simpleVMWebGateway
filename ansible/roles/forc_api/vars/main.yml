@@ -5,6 +5,13 @@
 # Ex: reverseproxy.bibiserv.projects.bi.denbi.de
 DOMAIN: ""
 
+FORC_BACKUP_ENABLED: yes
+FORC_BACKUP_ROTATION_ENABLED: true
+FORC_BACKUP_ROTATION_MAX_SIZE: 5
+FORC_BACKUP_ROTATION_CUT_SIZE: 4
+FORC_BACKUP_ROTATION_SIZE_TYP: GiB
+FORC_BACKUP_HOST_PATH: "/persistent/backup/forc"
+
 # Protect the FORC API endpoints via key header (X-API-KEY). This field needs to be set with a strong secret.
 FORC_API_KEY: ""
 

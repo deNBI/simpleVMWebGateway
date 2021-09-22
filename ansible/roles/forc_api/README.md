@@ -33,6 +33,13 @@ Role Variables
 | DOMAIN                    | The domain name of the webserver serving forc and OpenResty           |                               | Yes       |
 | CERTBOT_USED              | Set this to no if you don't use certbot for autogenerating ssl certs. | yes                           | No        |
 | INSTALL_OPENRESTY         | Set this to no if you only want to install forc as uWSGI app.         | yes                           | No        |
+| FORC_BACKUP_ENABLED       | If Backups from backends and templates folder will be created         | yes                           | NO        |
+| FORC_BACKUP_HOST_PATH     | Where the Backups will be stored on the host                          | /persistent/backup/forc       | No        |
+| FORC_BACKUP_ROTATION_ENABLED | If the Backups will be rotated                                     | true                          | No        |
+| FORC_BACKUP_ROTATION_MAX_SIZE | When this size of the backups folder is reached the backups are rotated | 5                       | No        |
+| FORC_BACKUP_ROTATION_CUT_SIZE | Deletes oldest Backups till this  size is reached                 | 4                             | No        |
+| FORC_BACKUP_ROTATION_SIZE_TYP| Size Type For Rotation                                             | GiB                           | No        |
+
 
 **defaults/main.yml**
 

@@ -14,3 +14,7 @@
   tags: ['forc_openresty']
   when: INSTALL_OPENRESTY == 'yes'
 
+- include: "025-backup.yml"
+  tags: ["forc-backup"]
+  when: {{FORC_BACKUP_ENABLED}} == 'yes'
+
