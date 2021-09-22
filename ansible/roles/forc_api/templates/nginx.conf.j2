@@ -20,6 +20,7 @@ http {
     #LUA caches for various session modules
     lua_shared_dict discovery 1m;
     lua_shared_dict jwks 1m;
+    lua_shared_dict sessions 10m;
     lua_code_cache off;
 
      #Allow websockets by allowing general connection upgrade requests, theia needs websockets
@@ -37,7 +38,11 @@ http {
                 client_secret = "{{ FORC_OIDC_CLIENT_SECRET }}",
                 logout_path = "/logout",
                 ssl_verify = "no",
-                iat_slack = 600
+                iat_slack = 600,
+                scope = "openid email profile offline_access",
+                renew_access_token_on_expiry = true,
+                access_token_expires_leeway = 60,
+                session_contents = {id_token=true, access_token=true}
           }
      }
 
@@ -69,6 +74,21 @@ http {
         ssl_certificate /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
         set $session_secret {{ FORC_SECRET_KEY }};
+        set $session_cipher none;                 # don't need to encrypt the session content, it's an opaque identifier
+        set $session_storage shm;                 # use shared memory
+        set $session_cookie_persistent on;        # persist cookie between browser sessions
+        set $session_cookie_renew      3500;      # new cookie every hour
+        set $session_cookie_lifetime   86400;     # lifetime for persistent cookies
+        set $session_name              sess_auth; # name of the cookie to store the session identifier in
+
+        set $session_shm_store         sessions;  # name of the dict to store sessions in
+        # See https://github.com/bungle/lua-resty-session#shared-dictionary-storage-adapter for the following options
+        set $session_shm_uselocking    off;
+        set $session_shm_lock_exptime  3;
+        set $session_shm_lock_timeout  2;
+        set $session_shm_lock_step     0.001;
+        set $session_shm_lock_ratio    1;
+        set $session_shm_lock_max_step 0.5;
 
         location / {
 
@@ -81,6 +101,15 @@ http {
                         ngx.say(err)
                         ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
                 end
+
+                ngx.req.set_header("X-Auth-Audience", res.id_token.aud)
+                ngx.req.set_header("X-Auth-Email", res.id_token.email)
+                ngx.req.set_header("X-Auth-ExpiresIn", res.id_token.exp)
+                ngx.req.set_header("X-Auth-Name", res.id_token.name)
+                ngx.req.set_header("X-Auth-Subject", res.id_token.sub)
+                ngx.req.set_header("X-Auth-Userid", res.id_token.preferred_username)
+                ngx.req.set_header("X-Auth-Username", res.id_token.preferred_username)
+                ngx.req.set_header("X-Auth-Locale", res.id_token.locale)
 
         }
 

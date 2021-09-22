@@ -1,0 +1,3 @@
+[clog]
+repository = "https://github.com/deNBI/simpleVMWebGateway"
+from-latest-tag = true
