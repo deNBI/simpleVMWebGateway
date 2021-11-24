@@ -20,7 +20,6 @@ def random_with_N_digits(n):
     return randint(range_start, range_end)
 
 
-
 def getBackends():
     if not os.path.exists(backend_path) and not os.access(backend_path, os.W_OK):
         logger.error("Not able to access configured backend path.")
@@ -65,8 +64,6 @@ def generateSuffixNumber(user_key_url):
     return str(highestID + 1)
 
 
-
-
 def createBackend(payload):
     # field validation happens beforehand by restplus, this checks semantics
     validationStatus = validatePostBackendContent(payload)
@@ -109,7 +106,6 @@ def createBackend(payload):
     return payload
 
 
-
 def deleteBackend(backendID):
     if not os.path.exists(backend_path) and not os.access(backend_path, os.W_OK):
         logger.error("Not able to access configured backend path.")
@@ -128,7 +124,7 @@ def deleteBackend(backendID):
                 os.remove(backend_path + file)
                 logger.info("Deleted backend with id: " + str(backendID))
                 reloadOpenresty()
-                return
+                return None
             except OSError as e:
                 logger.warning("Was not able to delete backend with id: " + str(backendID) + " ERROR: " + str(e))
                 raise InternalServerError("Server was not able to delete this backend. Contact the admin.")
