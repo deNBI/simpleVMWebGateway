@@ -1,6 +1,6 @@
 alembic==1.7.5
 aniso8601==9.0.1
-attrs==21.2.0
+attrs==21.4.0
 bcrypt==3.2.0
 cffi==1.15.0
 Click==8.0.3
