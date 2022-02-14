@@ -75,7 +75,8 @@ To install OpenResty+certbot(+renewal)+FORC:
           certbot_admin_email: mail@mail.de
           certbot_create_if_missing: true
           certbot_create_standalone_stop_services: []
-          certbot_auto_renew_options: "--pre-hook "sudo systemctl stop openresty" --post-hook "sudo systemctl start openresty" --quiet --no-self-upgrade"
+          certbot_auto_renew_user: root
+          certbot_auto_renew_options: "--pre-hook "systemctl stop openresty" --post-hook "systemctl start openresty" --quiet --no-self-upgrade"
 
           certbot_certs:
           - domains:
