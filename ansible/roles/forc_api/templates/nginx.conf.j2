@@ -52,6 +52,10 @@ http {
         listen {{ FORC_SERVICE_PORT }} ssl;
         ssl_certificate  /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
         ssl_certificate_key  /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA;
+        ssl_prefer_server_ciphers on;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload";
 
         location / {
                 include uwsgi_params;
@@ -73,6 +77,10 @@ http {
         server_name  {{ DOMAIN }};
         ssl_certificate /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA;
+        ssl_prefer_server_ciphers on;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload";
         set $session_secret {{ FORC_SECRET_KEY }};
         set $session_cipher none;                 # don't need to encrypt the session content, it's an opaque identifier
         set $session_storage shm;                 # use shared memory
