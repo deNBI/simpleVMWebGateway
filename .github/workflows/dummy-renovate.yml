@@ -1,0 +1,12 @@
+name: dummy-renovate
+on:
+  pull_request:
+        types: [opened, edited]
+
+jobs:
+  run_if:
+    if:  startsWith(github.head_ref, 'deps/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: my-step
+        run: echo "Hello World!"
