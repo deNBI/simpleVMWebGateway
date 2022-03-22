@@ -16,14 +16,14 @@ class BackendDto:
 
     backend = api.model('Backend', {
         'id': fields.Integer(required=True, description="Unique ID of backend", example="78345"),
-        'owner': fields.String(required=True, description="ELIXIR user who owns this backend. Field without @elixir.org suffix."),
+        'owner': fields.String(required=True, description="User who owns this backend."),
         'location_url': fields.String(required=True, description="Protected reverse-proxy path which leads to specific backend"),
         'template': fields.String(required=True, description="Used backend template", example="rstudio"),
         'template_version': fields.String(required=True, description="Template Version", example="v1")
     })
 
     createBackend = api.model('CreateBackend', {
-        'owner': fields.String(required=True, description="ELIXIR user who owns this backend. Field without @elixir.org suffix", example="21894723853fhdzug92"),
+        'owner': fields.String(required=True, description="User who owns this backend.", example="21894723853fhdzug92"),
         'user_key_url': fields.String(required=True, description="User set location url prefix", example="myFavoriteRstudio"),
         'upstream_url': fields.String(required=True, description="Inject the full url (with protocol) for the real location of the backend service in the template.", example="http://localhost:7001/"),
         'template': fields.String(required=True, description="Used backend template", example="rstudio"),
@@ -35,8 +35,8 @@ class UserDto:
     api = Namespace('users', description="All user related endpoints. Users are people allowed to access a backend.", authorizations=authorizations)
 
     createUser = api.model('createUser', {
-        'owner': fields.String(required=True, description="ELIXIR user who owns this backend. Field without @elixir.org suffix."),
-        'user': fields.String(required=True, description="ELIXIR user who will be added to this backend. Field without @elixir.org suffix.")
+        'owner': fields.String(required=True, description="User who owns this backend. "),
+        'user': fields.String(required=True, description="User who will be added to this backend.")
     })
 
 

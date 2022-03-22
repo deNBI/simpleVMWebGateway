@@ -20,7 +20,7 @@ def get_users(backend_id):
 
 def add_user(backend_id, user_id):
     user_id_path = "{0}/{1}".format(user_path, backend_id)
-    user_file_name = "{0}@elixir-europe.org".format(user_id)
+    user_file_name = "{0}".format(user_id)
     if not os.path.exists(user_id_path):
         try:
             os.mkdir(user_id_path)
@@ -45,7 +45,7 @@ def add_user(backend_id, user_id):
 
 def delete_user(backend_id, user_id):
     user_id_path = "{0}/{1}".format(user_path, backend_id)
-    user_file_name = "{0}@elixir-europe.org".format(user_id)
+    user_file_name = "{0}".format(user_id)
     user_file_path = "{0}/{1}".format(user_id_path, user_file_name)
     if not os.path.exists(user_id_path):
         logger.error("No user folder found for backend: {0}.".format(backend_id))

@@ -11,7 +11,7 @@ def validatePostBackendContent(payload):
     #check owner
     owner = payload['owner']
     if not re.fullmatch(ownerRegex, owner):
-        return {"error" : "The owner name can only contain alphabetics and numerics with at least 30 chars. Also no @elixir.org prefix at the end please!"}
+        return {"error" : "The owner name can only contain alphabetics and numerics with at least 30 chars."}
 
     user_key_url = payload['user_key_url']
     if not re.fullmatch(userKeyUrlRegex, user_key_url):
