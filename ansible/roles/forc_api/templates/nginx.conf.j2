@@ -49,7 +49,7 @@ http {
 
 
     server {
-        listen {{ FORC_SERVICE_PORT }} ssl;
+        listen {{ FORC_SERVICE_PORT }} ssl http2;
         ssl_certificate  /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
         ssl_certificate_key  /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
         ssl_protocols TLSv1.2 TLSv1.3;
@@ -79,11 +79,11 @@ http {
 
 
     server {
-        listen 0.0.0.0:443 ssl;
+        listen 0.0.0.0:443 ssl http2;
         server_name  {{ DOMAIN }};
         ssl_certificate /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
-         ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
         ssl_prefer_server_ciphers on;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload";
