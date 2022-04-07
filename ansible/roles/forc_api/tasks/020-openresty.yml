@@ -16,7 +16,7 @@
 
 - name: Add OpenResty APT repository
   apt_repository:
-    repo: deb http://openresty.org/package/ubuntu bionic main
+    repo: "deb http://openresty.org/package/ubuntu {{ ansible_lsb.codename|lower }} main"
     state: present
     update_cache: yes
 
