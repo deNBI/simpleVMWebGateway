@@ -31,7 +31,8 @@ http {
 
     #Create global LUA variable which keeps our ELIXIR AAI Configuration dict
     init_by_lua_block {
-         opts2 = {
+
+        opts2 = {
                 redirect_uri = "https://{{ DOMAIN }}/redirect_uri",
                 discovery = "{{ FORC_OIDC_DISCOVERY_URL }}",
                 client_id = "{{ FORC_OIDC_CLIENT_ID }}",
@@ -64,8 +65,7 @@ http {
         ssl_stapling_verify on;
 
         location / {
-                include uwsgi_params;
-                uwsgi_pass unix:/var/run/forc.sock;
+                proxy_pass http://unix:/var/run/forc.sock;
                 }
 
         }

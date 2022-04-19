@@ -15,9 +15,9 @@ RUN apt-get -y install openresty
 RUN opm install zmartzone/lua-resty-openidc
 RUN mkdir -p /opt/simpleVMWebGateway
 RUN git clone https://github.com/deNBI/simpleVMWebGateway.git /opt/simpleVMWebGateway/
-RUN pip3 install -r /opt/simpleVMWebGateway/FlaskOpenRestyConfigurator/requirements.txt
+RUN pip3 install -r /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/requirements.txt
 
-WORKDIR /opt/simpleVMWebGateway/FlaskOpenRestyConfigurator
+WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
 
 COPY uwsgi.ini uwsgi.ini
 COPY launch.sh launch.sh

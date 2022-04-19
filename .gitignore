@@ -10,3 +10,6 @@ ansible/inventory*
 ansible/site*
 ansible/test.json
 */.python-version
+FastapiOpenRestyConfigurator/.env
+template_path
+backend_path
