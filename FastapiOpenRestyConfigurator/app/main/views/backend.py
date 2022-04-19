@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.openapi.models import APIKey
 from werkzeug.exceptions import NotFound, InternalServerError
 
-from ..model.serializers import BackendIn, BackendOut, BackendTemp
+from ..model.serializers import BackendIn, BackendOut
 from ..service import backend as backend_service
 from ..service import user as user_service
 from ..util.auth import get_api_key

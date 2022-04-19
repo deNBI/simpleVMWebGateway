@@ -129,13 +129,13 @@ class BackendTemp(BackendIn, BackendOut):
     """
     Backend class to temporarily save information. Links BackendIn with BackendOut.
     """
-    id: int | None = None
-    owner: str | None = None
-    location_url: str | None = None
-    template: str | None = None
-    template_version: str | None = None
-    user_key_url: str | None = None
-    upstream_url: str | None = None
+    id: int = None
+    owner: str = None
+    location_url: str = None
+    template: str = None
+    template_version: str = None
+    user_key_url: str = None
+    upstream_url: str = None
 
 
 class Template(BaseModel):
@@ -150,7 +150,7 @@ class User(BaseModel):
     """
     User model.
     """
-    owner: str | None = None
+    owner: str = None
     user: str
 
 
