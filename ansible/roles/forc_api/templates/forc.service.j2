@@ -1,5 +1,5 @@
 [Unit]
-Description=uWSGI instance to serve the FlaskOpenResty Configurator
+Description=Gunicorn instance to serve the FastapiOpenResty Configurator
 After=network.target
 
 [Service]
@@ -10,16 +10,10 @@ KillSignal=SIGQUIT
 Type=notify
 NotifyAccess=all
 
-WorkingDirectory={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway
-ExecStart=/usr/local/bin/uwsgi --ini uwsgi.ini
+WorkingDirectory={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/FastapiOpenRestyConfigurator
+ExecStart={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/FastapiOpenRestyConfigurator/venv/bin/gunicorn -c gunicorn_conf.py main:app
 
-
-Environment="PATH={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/FlaskOpenRestyConfigurator/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
-
-Environment="FORC_BACKEND_PATH={{ FORC_BACKEND_PATH }}"
-Environment="FORC_TEMPLATE_PATH={{ FORC_TEMPLATE_PATH }}"
-Environment="FORC_API_KEY={{ FORC_API_KEY }}"
-
+Environment="PATH={{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/FastapiOpenRestyConfigurator/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
 
 [Install]
 WantedBy=multi-user.target

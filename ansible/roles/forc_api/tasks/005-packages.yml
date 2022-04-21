@@ -28,8 +28,3 @@
   apt:
     name: virtualenv
     state: latest
-
-- name: Install uWSGI
-  pip:
-    executable: pip3
-    name: uwsgi
