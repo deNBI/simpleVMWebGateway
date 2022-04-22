@@ -1,7 +1,7 @@
 Role Name
 =========
 
-This role installs the [FlaskOpenRestyConfigurator](https://github.com/deNBI/simpleVMWebGateway) and optionally OpenResty
+This role installs the [FastapiOpenRestyConfigurator](https://github.com/deNBI/simpleVMWebGateway) and optionally OpenResty
 with all needed plugins and SSL certs.
 
 Requirements
