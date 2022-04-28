@@ -26,6 +26,7 @@ async def get_users(backend_id):
         users_to_return.append(User(user=user))
     return users_to_return
 
+
 async def add_user(backend_id, user_id):
     backend_id = secure_filename(str(backend_id))
     user_id = secure_filename(str(user_id))

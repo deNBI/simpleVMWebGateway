@@ -18,7 +18,6 @@ logger = logging.getLogger("view")
 @router.get("/users/{backend_id}", response_model=List[User], tags=["Users"])
 async def get_users_for_backend(backend_id: str, api_key: APIKey = Depends(get_api_key)):
     users = await user_service.get_users(backend_id)
-    logger.info(users)
     if not users:
         return []
     return users
