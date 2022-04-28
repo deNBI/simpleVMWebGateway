@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.openapi.models import APIKey
 from werkzeug.exceptions import NotFound, InternalServerError
+from werkzeug.utils import secure_filename
 
 from ..model.serializers import BackendIn, BackendOut
 from ..service import backend as backend_service
@@ -52,6 +53,7 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
     summary="Get a backend by id."
 )
 async def get_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)):
+    backend_id = int(secure_filename(str(backend_id)))
     backends = await backend_service.get_backends()
     if not backends:
         raise HTTPException(status_code=404, detail="No backends found.")
@@ -72,6 +74,7 @@ async def get_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)):
 )
 async def delete_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)):
     try:
+        backend_id = int(secure_filename(str(backend_id)))
         await backend_service.delete_backend(backend_id)
         await user_service.delete_all(backend_id)
     except NotFound:

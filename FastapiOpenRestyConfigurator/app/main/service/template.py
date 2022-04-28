@@ -25,8 +25,11 @@ async def get_templates(template_name=None, template_version=None) -> List[Templ
     if template_name is None and template_version is None:
         file_regex = f"(.*)%(.*).conf"
     elif template_version is None:
+        template_name = re.escape(template_name)
         file_regex = f"({template_name})%(.*).conf"
     else:
+        template_name = re.escape(template_name)
+        template_version = re.escape(template_version)
         file_regex = f"({template_name})%({template_version}).conf"
     template_path_files = os.listdir(settings.FORC_TEMPLATE_PATH)
     valid_templates = []
