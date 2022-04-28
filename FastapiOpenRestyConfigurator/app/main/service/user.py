@@ -6,20 +6,30 @@ import os
 import shutil
 
 from ..config import get_settings
+from werkzeug.utils import secure_filename
+
+from ..model.serializers import User
 
 logger = logging.getLogger("service")
 settings = get_settings()
 
 
 async def get_users(backend_id):
+    backend_id = secure_filename(str(backend_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
     if not os.path.exists(user_id_path) and not os.access(user_id_path, os.R_OK):
         logger.exception(f"Not able to access configured user id path. Backend id: {backend_id}")
         return []
-    return os.listdir(user_id_path)
+    users = os.listdir(user_id_path)
+    users_to_return = []
+    for user in users:
+        users_to_return.append(User(user=user))
+    return users_to_return
 
 
 async def add_user(backend_id, user_id):
+    backend_id = secure_filename(str(backend_id))
+    user_id = secure_filename(str(user_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
     user_file_name = f"{user_id}@elixir-europe.org"
     if not os.path.exists(user_id_path):
@@ -43,6 +53,8 @@ async def add_user(backend_id, user_id):
 
 
 async def delete_user(backend_id, user_id):
+    backend_id = secure_filename(str(backend_id))
+    user_id = secure_filename(str(user_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
     user_file_name = f"{user_id}@elixir-europe.org"
     user_file_path = f"{user_id_path}/{user_file_name}"
@@ -69,6 +81,7 @@ async def delete_user(backend_id, user_id):
 
 
 async def delete_all(backend_id):
+    backend_id = secure_filename(str(backend_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
     if not os.path.exists(user_id_path):
         logger.info(f"No user folder found for backend: {backend_id}.")
