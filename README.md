@@ -27,7 +27,7 @@ Make sure that your Webserver has met the following requirements:
 ### Quick Start
 
 * Clone this repo.
-* Install the required packages (preferable in an virtualenv) with `pip3 install -r FlaskOpenRestyConfigurator/requirements.txt`
+* Install the required packages (preferable in an virtualenv) with `pip3 install -r FastapiOpenRestyConfigurator/requirements.txt`
 
 Configure needed environment variables with `export VARIABLE=VALUE`:
 
@@ -38,7 +38,7 @@ Configure needed environment variables with `export VARIABLE=VALUE`:
 | FORC_BACKEND_PATH | Filesystem path in where FORC generates NGINX config snippets to      |    /home/ubuntu/backend_path/ |
 | FORC_TEMPLATE_PATH | Filesystem path which locates template files for FORC | /home/ubuntu/template_path/ |
 
-Afterwards, start the FORC Service with `python3 FlaskOpenRestyConfigurator/manage.py run`.
+Afterwards, start the FORC Service with `python3 FastapiOpenRestyConfigurator/manage.py run`.
 FORC runs on `127.0.0.1:5000` (configurable in future releases).
 
 Currently, the engine running this service is the development backend engine from flask. It is recommended to run this service

@@ -16,7 +16,7 @@
 
 - name: Add OpenResty APT repository
   apt_repository:
-    repo: deb http://openresty.org/package/ubuntu bionic main
+    repo: "deb http://openresty.org/package/ubuntu {{ ansible_lsb.codename|lower }} main"
     state: present
     update_cache: yes
 
@@ -48,3 +48,26 @@
     state: restarted
     enabled: True
   when: openresty_config is changed
+
+- name: Setup log rotation access.log
+  cron:
+    name: rotate_access_log
+    user: root
+    minute: "0"
+    hour: "0"
+    day: "1"
+    month: "*"
+    weekday: "*"
+    job: sudo mv /usr/local/openresty/nginx/logs/access.log /usr/local/openresty/nginx/logs/access.log.0; sudo kill -USR1 `cat /usr/local/openresty/nginx/logs/nginx.pid`
+
+- name: Setup log rotation error.log
+  cron:
+    name: rotate_error_log
+    user: root
+    minute: "0"
+    hour: "1"
+    day: "1"
+    month: "*"
+    weekday: "*"
+    job: sudo mv /usr/local/openresty/nginx/logs/error.log /usr/local/openresty/nginx/logs/error.log.0; sudo kill -USR1 `cat /usr/local/openresty/nginx/logs/nginx.pid`
+

@@ -9,19 +9,24 @@
 
 - name: Install requirements in a venv
   pip:
-    requirements: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator/requirements.txt"
-    virtualenv: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FlaskOpenRestyConfigurator/venv"
+    requirements: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FastapiOpenRestyConfigurator/requirements.txt"
+    virtualenv: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FastapiOpenRestyConfigurator/venv"
     virtualenv_python: python3
 
-- name: Generate uwsgi config
+- name: Generate gunicorn config
   template:
-    src: uwsgi.ini.j2
-    dest: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/uwsgi.ini"
+    src: gunicorn_conf.py.j2
+    dest: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FastapiOpenRestyConfigurator/gunicorn_conf.py"
 
 - name: Generate systemd unit file for forc
   template:
     src: forc.service.j2
     dest: /etc/systemd/system/forc.service
+
+- name: Generate .env file for forc
+  template:
+    src: forc.env.j2
+    dest: "{{ FORC_INSTALLATION_PATH }}simpleVMWebGateway/FastapiOpenRestyConfigurator/.env"
 
 - name: Copy example templates
   copy:
