@@ -39,7 +39,7 @@ This is an example Template for the research environment [RStudio](https://rstud
                     end
 
                     -- Protect this location and allow only one specific ELIXIR User
-                    if res.id_token.sub ~= "{{ owner }}@elixir-europe.org" then
+                    if res.id_token.sub ~= "{{ owner }}" then
                             ngx.exit(ngx.HTTP_FORBIDDEN)
                     end
             }
@@ -72,7 +72,7 @@ In order to generate a backend from a template, you need to pass the following j
 We want to register a new backend for an ELIXIR User with the following data:
 
 * The research environment should be accessable via `https://<reverse_proxy_url>/myRstudio`. FORC will actually add a unique ID as a suffix to avoid conflicts. The actual path would probably look like `/myRstudio_001/`.
-* The owner has the ELIXIR ID `a9ffc9fb32e35f16d019a9acceeaa08e7ceehdue`. Again, don't pass in the rest of the ELIXIR ID (no @elixir-europe.org). Only this user is allowed to access the resource.
+* The owner has the ELIXIR ID `a9ffc9fb32e35f16d019a9acceeaa08e7ceehdue`. Again, don't pass in the rest of the ELIXIR ID (no ). Only this user is allowed to access the resource.
 * The actual service is running at `http://192.168.17.3:5000`, we want to reverse proxy this location via FORC to the user.
 * The targeted service is a RStudio instance.
 * We want to use a specific version of the rstudio template: `v01`.
