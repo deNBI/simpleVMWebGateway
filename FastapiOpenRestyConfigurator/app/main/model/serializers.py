@@ -150,7 +150,7 @@ class User(BaseModel):
     """
     User model.
     """
-    owner: str = None
+    
     user: str
 
 
