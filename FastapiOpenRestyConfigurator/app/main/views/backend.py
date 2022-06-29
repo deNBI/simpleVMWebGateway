@@ -78,10 +78,10 @@ async def delete_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)
         await backend_service.delete_backend(backend_id)
         await user_service.delete_all(backend_id)
     except NotFound:
-        return JSONResponse(status_code=404)
+        return JSONResponse(status_code=404, content={"error": f"Backend with {backend_id} not found."})
     except InternalServerError as e:
         logger.exception(e)
-        return JSONResponse(status_code=500)
+        return JSONResponse(status_code=500, content={"error": "Internal server error"})
     return {"message": f"Backend deleted: {backend_id}."}
 
 
