@@ -1,2 +1,6 @@
 ---
 # handlers file for forc_api
+- name: restart sshd
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
