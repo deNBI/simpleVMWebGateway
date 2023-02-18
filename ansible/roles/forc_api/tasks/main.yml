@@ -6,15 +6,18 @@
 
 - include: "005-packages.yml"
   tags: ['forc_packages']
+  
+- include: "010-config.yml"
+  tags: ['forc_config']
 
 - include: "015-forc.yml"
   tags: ['forc_forc']
 
 - include: "020-openresty.yml"
   tags: ['forc_openresty']
-  when: INSTALL_OPENRESTY == 'yes'
+  when: INSTALL_OPENRESTY
 
 - include: "025-backup.yml"
   tags: ["forc-backup"]
-  when: FORC_BACKUP_ENABLED == 'yes'
+  when: FORC_BACKUP_ENABLED
 
