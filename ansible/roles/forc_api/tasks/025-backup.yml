@@ -36,7 +36,7 @@
 
 - docker_container:
     name: "backup-forc"
-    image: denbicloud/cron-backup:0.11.0
+    image: denbicloud/cron-backup:0.12.0
     state: started
     restart: yes
     volumes:
