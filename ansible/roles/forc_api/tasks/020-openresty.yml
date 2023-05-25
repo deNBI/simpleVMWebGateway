@@ -26,7 +26,7 @@
     state: latest
 
 - name: Install lua-resty-openidc, lua-resty-http, lua-resty-session, lua-resty-jwt
-  shell: "opm install zmartzone/lua-resty-openidc ledgetech/lua-resty-http bungle/lua-resty-session cdbattags/lua-resty-jwt"
+  shell: "opm install zmartzone/lua-resty-openidc ledgetech/lua-resty-http bungle/lua-resty-session=3.10 cdbattags/lua-resty-jwt"
   args:
     creates: /usr/local/openresty/site/lualib/resty/openidc.lua
 
