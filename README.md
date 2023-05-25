@@ -68,5 +68,28 @@ A non-interactive Documentation is also available [here](https://app.swaggerhub.
 ### Ansible Role
 An ansible role is included in this repo [here](ansible/roles/forc_api/).
 
+Role Variables:
+
+An ansible role is included in this repo [here](ansible/roles/forc_api/).
+
+| Variable                   | Description                                                      | Example                   |
+| -------------------------- | ---------------------------------------------------------------- |---------------------------|
+| `FORC_SECRET_KEY`          | Encryption key for the FORC API.                                 |                           |
+| `FORC_API_KEY`             | API key for the FORC API.                                        |                           |
+| `FORC_OIDC_CLIENT_ID`      | Client ID for OpenID Connect (OIDC) authentication.               |                           |
+| `FORC_OIDC_CLIENT_SECRET`  | Client secret for OIDC authentication.                           |                           |
+| `REPOSITORY_BRANCH`        | Branch to deploy (lower priority than `REPOSITORY_TAG`).          | dev                       |
+| `REPOSITORY_TAG`           | Tag to deploy (higher priority than `REPOSITORY_BRANCH`).         |                           |
+| `FORC_SERVICE_PORT`        | Port on which the FORC service should listen.                     |                           |
+| `DOMAIN`                   | Domain name for the FORC API.                                    |                           |
+| `FORC_BACKUP_ENABLED`      | Flag to control whether backup functionality is enabled.          | `yes`                     |
+| `FORC_BACKUP_ROTATION_ENABLED` | Flag to control whether backup rotation is enabled.             | `true`                    |
+| `FORC_BACKUP_ROTATION_MAX_SIZE` | Maximum number of backups to keep.                              | `5`                       |
+| `FORC_BACKUP_ROTATION_CUT_SIZE` | Number of backups to remove when the maximum size is reached.   | `4`                       |
+| `FORC_BACKUP_ROTATION_SIZE_TYP` | Size unit for backup rotation.                                  | `GiB`                     |
+| `FORC_BACKUP_HOST_PATH`    | Host path where backups will be stored.                          | `/persistent/backup/forc` |
+
+
+
 ### Docker
 A docker deployment example is stated [here](docker/)
