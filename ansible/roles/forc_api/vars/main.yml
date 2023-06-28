@@ -12,7 +12,7 @@ FORC_BACKUP_ROTATION_CUT_SIZE: 4
 FORC_BACKUP_ROTATION_SIZE_TYP: GiB
 FORC_BACKUP_HOST_PATH: "/persistent/backup/forc"
 # Set branch to checkout.
-REPOSITORY_BRANCH: "master"
+REPOSITORY_BRANCH: "dev"
 
 # Protect the FORC API endpoints via key header (X-API-KEY). This field needs to be set with a strong secret.
 FORC_API_KEY: ""

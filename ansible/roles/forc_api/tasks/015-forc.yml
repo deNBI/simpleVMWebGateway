@@ -5,7 +5,8 @@
     repo: https://github.com/deNBI/simpleVMWebGateway.git
     dest: "{{ FORC_INSTALLATION_PATH }}/simpleVMWebGateway/"
     force: yes
-    version: "{{ REPOSITORY_BRANCH }}"
+    version: "{{ REPOSITORY_TAG | default(REPOSITORY_BRANCH) | default('dev') }}"
+
 
 - name: Install requirements in a venv
   pip:
