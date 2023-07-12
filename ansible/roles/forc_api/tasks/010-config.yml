@@ -1,0 +1,22 @@
+---
+
+- name: Configure sshd
+  ansible.builtin.lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regex: "KexAlgorithms"
+    line: "KexAlgorithms   diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1"
+    owner: root
+    group: root
+  notify:
+    - restart sshd
+    
+- name: Configute TCP timestamps
+  ansible.builtin.lineinfile:
+    path: "/etc/sysctl.conf"
+    line: "net.ipv4.tcp_timestamps = 0"
+    owner: root
+    group: root
+    
+- name: Read in sysctl.conf file
+  ansible.builtin.command: "sysctl -p"
+    
