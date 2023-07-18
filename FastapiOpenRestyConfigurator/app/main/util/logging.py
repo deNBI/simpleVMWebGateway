@@ -26,6 +26,7 @@ log_config = {
         "internal": {"handlers": ["default"], "level": settings.LOG_LEVEL},
         "view": {"handlers": ["default"], "level": settings.LOG_LEVEL},
         "service": {"handlers": ["default"], "level": settings.LOG_LEVEL},
+        "validation": {"handlers": ["default"], "level": settings.LOG_LEVEL},
         "util": {"handlers": ["default"], "level": settings.LOG_LEVEL}
     },
 }
