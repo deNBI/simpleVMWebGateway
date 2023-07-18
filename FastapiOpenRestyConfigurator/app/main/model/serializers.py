@@ -25,7 +25,7 @@ tags_metadata = [
     },
 ]
 
-owner_regex = r"([a-z0-9-@]{30,})"
+owner_regex = r'^[a-zA-Z0-9@]{30,}$'
 user_key_url_regex = r"^[a-zA-Z0-9]{3,25}$"
 upstream_url_regex = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 
@@ -60,7 +60,6 @@ class BackendBase(BaseModel):
         :param owner: Value to assign to owner.
         :return: Value or AssertionError.
         """
-        owner_regex = r'^[a-zA-Z0-9@]{30,}$'
         if re.fullmatch(owner_regex, owner):
             return owner
         else:
