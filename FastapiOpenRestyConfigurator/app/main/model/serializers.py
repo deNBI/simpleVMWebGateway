@@ -54,15 +54,17 @@ class BackendBase(BaseModel):
     )
 
     @validator("owner")
-    def owner_validation(cls, v):
+    def owner_validation(cls, owner):
         """
         Validate owner string.
-        :param v: Value to assign to owner.
+        :param owner: Value to assign to owner.
         :return: Value or AssertionError.
         """
-        assert re.fullmatch(owner_regex, v), \
-            "The owner name can only contain alphabetics,numerics and @ with at least 30 chars."
-        return v
+        owner_regex = r'^[a-zA-Z0-9@]{30,}$'
+        if re.fullmatch(owner_regex, owner):
+            return owner
+        else:
+            raise AssertionError("The owner name can only contain alphabets, numerics, and '@' with at least 30 characters.")
 
 
 class BackendIn(BackendBase):
@@ -149,7 +151,7 @@ class User(BaseModel):
     """
     User model.
     """
-    
+
     user: str
 
 
