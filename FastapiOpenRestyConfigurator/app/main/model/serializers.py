@@ -2,9 +2,10 @@
 Serializers for incoming and outgoing models.
 """
 import re
-
+import logging
 from pydantic import BaseModel, Field, validator
 
+logger = logging.getLogger("validation")
 # Metadata for used tags.
 tags_metadata = [
     {
@@ -60,6 +61,7 @@ class BackendBase(BaseModel):
         :param owner: Value to assign to owner.
         :return: Value or AssertionError.
         """
+        logger.info(f"Validate owner name -> {owner}")
         if re.fullmatch(owner_regex, owner):
             return owner
         else:
