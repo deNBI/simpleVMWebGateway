@@ -25,7 +25,7 @@ tags_metadata = [
     },
 ]
 
-owner_regex = r"([a-z0-9\-]{30,})"
+ownerRegex = r"([a-z0-9-@]{30,})"
 user_key_url_regex = r"^[a-zA-Z0-9]{3,25}$"
 upstream_url_regex = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 
@@ -37,7 +37,7 @@ class BackendBase(BaseModel):
     owner: str = Field(
         ...,
         title="Owner",
-        description="Owner of the backend without the @elixir.org suffix.",
+        description="Owner of the backend",
         example="21894723853fhdzug92"
     )
     template: str = Field(
@@ -61,8 +61,7 @@ class BackendBase(BaseModel):
         :return: Value or AssertionError.
         """
         assert re.fullmatch(owner_regex, v), \
-            "The owner name can only contain alphabetics and numerics with at least 30 chars. " \
-            "Also no @elixir.org prefix at the end please!"
+            "The owner name can only contain alphabetics,numerics and @ with at least 30 chars."
         return v
 
 

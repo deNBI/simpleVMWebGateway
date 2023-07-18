@@ -1,6 +1,6 @@
 import re
 
-ownerRegex = r"([a-z0-9-]{30,})"
+ownerRegex = r"([a-z0-9-@]{30,})"
 userKeyUrlRegex = r"^[a-zA-Z0-9]{3,25}$"
 
 upstreamURLRegex = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
@@ -11,7 +11,7 @@ def validatePostBackendContent(payload):
     #check owner
     owner = payload['owner']
     if not re.fullmatch(ownerRegex, owner):
-        return {"error" : "The owner name can only contain alphabetics, numerics and - with at least 30 chars."}
+        return {"error" : "The owner name can only contain alphabetics, numerics and @ - with at least 30 chars."}
 
     user_key_url = payload['user_key_url']
     if not re.fullmatch(userKeyUrlRegex, user_key_url):
