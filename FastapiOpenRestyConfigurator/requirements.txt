@@ -1,4 +1,4 @@
-fastapi==0.100.0
+fastapi==0.100.1
 uvicorn==0.23.1
 werkzeug==2.3.6
 Jinja2==3.1.2
