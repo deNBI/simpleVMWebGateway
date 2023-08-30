@@ -1,8 +1,8 @@
 import os
 from functools import lru_cache
 
-from pydantic import BaseSettings, SecretStr, validator, DirectoryPath
-
+from pydantic_settings import BaseSettings
+from pydantic import SecretStr, validator, DirectoryPath
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
