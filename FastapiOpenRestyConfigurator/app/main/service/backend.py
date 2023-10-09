@@ -17,12 +17,11 @@ from ..config import get_settings
 logger = logging.getLogger("service")
 settings = get_settings()
 
-file_regex = r"(\d*)%([a-z0-9\-]*)%([^%]*)%([^%]*)%([^%]*)\.conf"
-
+file_regex = r"(\d*)%([a-z0-9\-\@]*)%([^%]*)%([^%]*)%([^%]*)\.conf"
 
 async def random_with_n_digits(n):
-    range_start = 10 ** (n - 1)
-    range_end = (10 ** n) - 1
+    range_start = 10**(n-1)
+    range_end = (10**n)-1
     return randint(range_start, range_end)
 
 
@@ -95,7 +94,7 @@ async def create_backend(payload: BackendIn):
             raise InternalServerError("Server tried to create duplicate backend.")
 
     # create backend file in filesystem
-    filename = f"{payload.id}%{payload.owner.split('@')[0]}%{payload.location_url}%{payload.template}%{payload.template_version}.conf"
+    filename = f"{payload.id}%{payload.owner}%{payload.location_url}%{payload.template}%{payload.template_version}.conf"
 
     with open(f"{settings.FORC_BACKEND_PATH}/{filename}", 'w') as backend_file:
         backend_file.write(backend_file_contents)
