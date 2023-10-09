@@ -17,7 +17,7 @@ from ..config import get_settings
 logger = logging.getLogger("service")
 settings = get_settings()
 
-file_regex = r"(\d*)%([a-z0-9\-\@]*)%([^%]*)%([^%]*)%([^%]*)\.conf"
+file_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)\.conf"
 
 async def random_with_n_digits(n):
     range_start = 10**(n-1)
