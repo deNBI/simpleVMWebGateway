@@ -21,11 +21,17 @@ log_config = {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stderr",
         },
+        "file": {
+            "formatter": "default",
+            "class": "logging.FileHandler",
+            "filename": "/var/log/all_forc_logs.log"
+        },
     },
     "loggers": {
-        "internal": {"handlers": ["default"], "level": settings.LOG_LEVEL},
-        "view": {"handlers": ["default"], "level": settings.LOG_LEVEL},
-        "service": {"handlers": ["default"], "level": settings.LOG_LEVEL},
-        "util": {"handlers": ["default"], "level": settings.LOG_LEVEL}
+        "internal": {"handlers": ["default", "file"], "level": settings.LOG_LEVEL},
+        "view": {"handlers": ["default", "file"], "level": settings.LOG_LEVEL},
+        "service": {"handlers": ["default", "file"], "level": settings.LOG_LEVEL},
+        "validation": {"handlers": ["default", "file"], "level": settings.LOG_LEVEL},
+        "util": {"handlers": ["default", "file"], "level": settings.LOG_LEVEL}
     },
 }

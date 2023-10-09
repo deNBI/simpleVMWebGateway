@@ -2,9 +2,10 @@
 Serializers for incoming and outgoing models.
 """
 import re
-
+import logging
 from pydantic import BaseModel, Field, validator
 
+logger = logging.getLogger("validation")
 # Metadata for used tags.
 tags_metadata = [
     {
@@ -25,7 +26,7 @@ tags_metadata = [
     },
 ]
 
-owner_regex = r"([a-z0-9\-]{30,})"
+owner_regex = r'^[a-zA-Z0-9@.-]{30,}$'
 user_key_url_regex = r"^[a-zA-Z0-9]{3,25}$"
 upstream_url_regex = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 
@@ -37,7 +38,7 @@ class BackendBase(BaseModel):
     owner: str = Field(
         ...,
         title="Owner",
-        description="Owner of the backend without the @elixir.org suffix.",
+        description="Owner of the backend",
         example="21894723853fhdzug92"
     )
     template: str = Field(
@@ -54,16 +55,17 @@ class BackendBase(BaseModel):
     )
 
     @validator("owner")
-    def owner_validation(cls, v):
+    def owner_validation(cls, owner):
         """
         Validate owner string.
-        :param v: Value to assign to owner.
+        :param owner: Value to assign to owner.
         :return: Value or AssertionError.
         """
-        assert re.fullmatch(owner_regex, v), \
-            "The owner name can only contain alphabetics and numerics with at least 30 chars. " \
-            "Also no @elixir.org prefix at the end please!"
-        return v
+        logger.info(f"Validate owner name -> {owner}")
+        if re.fullmatch(owner_regex, owner):
+            return owner
+        else:
+            raise AssertionError("The owner name can only contain alphabets, numerics, and '@' with at least 30 characters.")
 
 
 class BackendIn(BackendBase):
@@ -150,7 +152,7 @@ class User(BaseModel):
     """
     User model.
     """
-    
+
     user: str
 
 
