@@ -39,7 +39,7 @@ This is an example Template for the research environment [RStudio](https://rstud
                     end
 
                     -- Protect this location and allow only one specific ELIXIR User
-                    if res.id_token.sub ~= "{{ owner }}@elixir-europe.org" then
+                    if res.id_token.sub ~= "{{ owner }}" then
                             ngx.exit(ngx.HTTP_FORBIDDEN)
                     end
             }
@@ -60,19 +60,19 @@ FORC automatically reloads OpenResty after a change, so that those backends can 
 
 In order to generate a backend from a template, you need to pass the following jinja2 variables:
 
-| Variable        | Description           | Example  |
-| ------------- |:-------------:| -----:|
-| key_url      | The name of the URL subpath in which the service should be accessable. | myFavoriteRstudio |
-| owner         | Restrict access to service only to this ELIXIR AAI User (pass without @elixir mail prefix) | 	a9ffc9fb32e35f16d019a9acceeaa08e7ceehdue ||
+| Variable        |                               Description                               | Example  |
+| ------------- |:-----------------------------------------------------------------------:| -----:|
+| key_url      | The name of the URL subpath in which the service should be accessable.  | myFavoriteRstudio |
+| owner         |           Restrict access to service only to this  AAI User             | 	a9ffc9fb32e35f16d019a9acceeaa08e7ceehdue ||
 | location_url | The path to the service you would like to serve via FORC reverse proxy. | http://192.168.17.3:5000 |
 
 
 ### Example API Call
 
-We want to register a new backend for an ELIXIR User with the following data:
+We want to register a new backend for an  User with the following data:
 
 * The research environment should be accessable via `https://<reverse_proxy_url>/myRstudio`. FORC will actually add a unique ID as a suffix to avoid conflicts. The actual path would probably look like `/myRstudio_001/`.
-* The owner has the ELIXIR ID `a9ffc9fb32e35f16d019a9acceeaa08e7ceehdue`. Again, don't pass in the rest of the ELIXIR ID (no @elixir-europe.org). Only this user is allowed to access the resource.
+* The owner has the User ID `a9ffc9fb32e35f16d019a9acceeaa08e7ceehdue`.  Only this user is allowed to access the resource.
 * The actual service is running at `http://192.168.17.3:5000`, we want to reverse proxy this location via FORC to the user.
 * The targeted service is a RStudio instance.
 * We want to use a specific version of the rstudio template: `v01`.

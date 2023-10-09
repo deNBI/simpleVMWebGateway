@@ -29,9 +29,15 @@ async def get_users(backend_id):
 
 async def add_user(backend_id, user_id):
     backend_id = secure_filename(str(backend_id))
-    user_id = secure_filename(str(user_id))
+    if "@" in user_id:
+        user_id_parts = user_id.split("@")
+        user_id_part1 = secure_filename(user_id_parts[0])
+        user_id_part2 = secure_filename(user_id_parts[1])
+        user_id = f"{user_id_part1}@{user_id_part2}"
+    else:
+        user_id = secure_filename(str(user_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
-    user_file_name = f"{user_id}@elixir-europe.org"
+    user_file_name = f"{user_id}"
     if not os.path.exists(user_id_path):
         try:
             os.mkdir(user_id_path)
@@ -56,7 +62,7 @@ async def delete_user(backend_id, user_id):
     backend_id = secure_filename(str(backend_id))
     user_id = secure_filename(str(user_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
-    user_file_name = f"{user_id}@elixir-europe.org"
+    user_file_name = f"{user_id}"
     user_file_path = f"{user_id_path}/{user_file_name}"
     if not os.path.exists(user_id_path):
         logger.exception(f"No user folder found for backend: {backend_id}.")

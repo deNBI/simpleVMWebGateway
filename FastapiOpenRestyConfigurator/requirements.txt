@@ -1,7 +1,7 @@
-fastapi==0.101.0
+fastapi==0.103.2
 uvicorn==0.23.2
-werkzeug==2.3.6
+werkzeug==2.3.7
 Jinja2==3.1.2
 python-dotenv==1.0.0
-gunicorn==20.1.0
+gunicorn==21.2.0
 pydantic-settings
