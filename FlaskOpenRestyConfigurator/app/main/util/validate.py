@@ -3,7 +3,7 @@ import re
 ownerRegex = r'^[a-zA-Z0-9@.-]{30,}$'
 userKeyUrlRegex = r"^[a-zA-Z0-9]{3,25}$"
 
-upstreamURLRegex = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+upstreamURLRegex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})$"
 
 
 
