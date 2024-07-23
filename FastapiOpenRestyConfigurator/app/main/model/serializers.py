@@ -125,6 +125,11 @@ class BackendOut(BackendBase):
         description="Protected reverse-proxy path which leads to specific backend.",
         example="myRstudio_103"
     )
+    file_path:str=Field(
+        ...,
+        title="File path of Backend",
+        description=" Local File path of the backend",
+    )
 
 
 class BackendTemp(BackendIn, BackendOut):

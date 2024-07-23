@@ -5,7 +5,7 @@ import logging
 import os
 import re
 from random import randint
-from typing import List
+from typing import List, Dict
 
 from werkzeug.exceptions import NotFound, InternalServerError
 
@@ -19,9 +19,10 @@ settings = get_settings()
 
 file_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)\.conf"
 
+
 async def random_with_n_digits(n):
-    range_start = 10**(n-1)
-    range_end = (10**n)-1
+    range_start = 10 ** (n - 1)
+    range_end = (10 ** n) - 1
     return randint(range_start, range_end)
 
 
@@ -44,10 +45,37 @@ async def get_backends() -> List[BackendOut]:
             owner=match.group(2),
             location_url=match.group(3),
             template=match.group(4),
-            template_version=match.group(5)
+            template_version=match.group(5),
+            file_path=os.path.join(settings.FORC_BACKEND_PATH, file)
         )
         valid_backends.append(backend)
     return valid_backends
+
+
+async def get_backends_upstream_urls() -> Dict[str, List[str]]:
+    valid_backends: List[BackendOut] = await get_backends()
+    upstream_urls = {}
+
+    for backend in valid_backends:
+        upstream_url = extract_proxy_pass(backend.file_path)
+        if upstream_url:
+            if upstream_url not in upstream_urls:
+                upstream_urls[upstream_url] = []
+            upstream_urls[upstream_url].append(backend.id)
+
+    return upstream_urls
+
+
+def extract_proxy_pass(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read()
+
+    match = re.search(r'proxy_pass\s+(http[^\s;]+);', content)
+
+    if match:
+        return match.group(1)
+    else:
+        return None
 
 
 async def generate_suffix_number(user_key_url):
@@ -82,16 +110,12 @@ async def create_backend(payload: BackendIn):
 
     payload.location_url = f"{payload.user_key_url}_{suffix_number}"
 
-    # check for duplicates in filesystem
-    backend_path_files = os.listdir(settings.FORC_BACKEND_PATH)
-    for file in backend_path_files:
-        match = re.fullmatch(file_regex, file)
-        if not match:
-            logger.warning("Found a backend file with wrong naming, skipping it: " + str(file))
-            continue
-        if match.group(1) == payload.id or match.group(3) == payload.location_url:
-            logger.error("Tried to create duplicate backend: " + payload.id + " and " + payload.location_url)
-            raise InternalServerError("Server tried to create duplicate backend.")
+    # check for duplicated in ip and port:
+    upstream_urls: Dict[str, List[BackendOut]] = await get_backends_upstream_urls()
+    matching_urls_backends: List[BackendOut] = upstream_urls.get(payload.upstream_url, [])
+    for backend in matching_urls_backends:
+        logger.info(f"Deleting existing Backend with same Upstream Url - {payload.upstream_url}")
+        await delete_backend(backend.id)
 
     # create backend file in filesystem
     filename = f"{payload.id}%{payload.owner}%{payload.location_url}%{payload.template}%{payload.template_version}.conf"
