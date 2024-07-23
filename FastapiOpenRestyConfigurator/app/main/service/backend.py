@@ -41,7 +41,7 @@ async def get_backends() -> List[BackendOut]:
             logger.warning("Found a backend file with wrong naming, skipping it: " + str(file))
             continue
         backend: BackendOut = BackendOut(
-            id=match.group(1),
+                id=match.group(1),
             owner=match.group(2),
             location_url=match.group(3),
             template=match.group(4),
