@@ -52,7 +52,7 @@ async def get_backends() -> List[BackendOut]:
     return valid_backends
 
 
-async def get_backends_upstream_urls() -> Dict[str, List[str]]:
+async def get_backends_upstream_urls() -> Dict[str, List[BackendOut]]:
     valid_backends: List[BackendOut] = await get_backends()
     upstream_urls = {}
 
@@ -61,7 +61,7 @@ async def get_backends_upstream_urls() -> Dict[str, List[str]]:
         if upstream_url:
             if upstream_url not in upstream_urls:
                 upstream_urls[upstream_url] = []
-            upstream_urls[upstream_url].append(backend.id)
+            upstream_urls[upstream_url].append(backend)
 
     return upstream_urls
 
