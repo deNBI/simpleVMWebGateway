@@ -126,7 +126,7 @@ class BackendOut(BackendBase):
         example="myRstudio_103"
     )
     file_path:str=Field(
-        ...,
+        None,
         title="File path of Backend",
         description=" Local File path of the backend",
     )
