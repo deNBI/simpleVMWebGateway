@@ -34,24 +34,26 @@
     src: "{{ role_path }}/files"
     dest: "/persistent"
 
-- docker_container:
-    name: "backup-forc"
-    image: quay.io/denbicloud/cron-backup:0.13.5
+- name: Run the backup-forc container
+  shell: |
+    docker run -d \
+      --name backup-forc \
+      --restart always \
+      -v "{{ FORC_BACKEND_PATH }}:/backends" \
+      -v "{{ FORC_TEMPLATE_PATH }}:/templates" \
+      -v "/persistent/files/install-packages.sh:/install-packages.sh" \
+      -v "/persistent/files/backup.sh:/etc/cronscripts/backup.sh" \
+      -v "/persistent/files/backup-cron:/etc/crontabs/dockercron/backup-cron" \
+      -v "{{ FORC_BACKUP_HOST_PATH }}:/etc/backup" \
+      -e BACKUP_ROTATION_ENABLED={{ FORC_BACKUP_ROTATION_ENABLED }} \
+      -e BACKUP_ROTATION_MAX_SIZE={{ FORC_BACKUP_ROTATION_MAX_SIZE }} \
+      -e BACKUP_ROTATION_CUT_SIZE={{ FORC_BACKUP_ROTATION_CUT_SIZE }} \
+      -e BACKUP_ROTATION_SIZE_TYP={{ FORC_BACKUP_ROTATION_SIZE_TYP }} \
+      quay.io/denbicloud/cron-backup:0.13.5
+  args:
+    executable: /bin/bash
 
-    state: started
-    restart: yes
-    volumes:
-      - "{{FORC_BACKEND_PATH}}:/backends"
-      - "{{FORC_TEMPLATE_PATH}}:/templates"
-      - "/persistent/files/install-packages.sh:/install-packages.sh"
-      - "/persistent/files/backup.sh:/etc/cronscripts/backup.sh"
-      - "/persistent/files/backup-cron:/etc/crontabs/dockercron/backup-cron"
-      - "{{FORC_BACKUP_HOST_PATH}}:/etc/backup"
-    env:
-      BACKUP_ROTATION_ENABLED={{FORC_BACKUP_ROTATION_ENABLED}}
-      BACKUP_ROTATION_MAX_SIZE={{FORC_BACKUP_ROTATION_MAX_SIZE}}
-      BACKUP_ROTATION_CUT_SIZE={{FORC_BACKUP_ROTATION_CUT_SIZE}}
-      BACKUP_ROTATION_SIZE_TYP={{FORC_BACKUP_ROTATION_SIZE_TYP}}
+
 
 
 
