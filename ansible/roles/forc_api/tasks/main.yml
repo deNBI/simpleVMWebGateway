@@ -1,23 +1,34 @@
 ---
 # tasks file for forc_api
 
-- include: "000-preparation.yml"
-  tags: ['forc_preparation']
+- name: Preparation tasks
+  import_tasks: "000-preparation.yml"
+  tags:
+    - forc_preparation
 
-- include: "005-packages.yml"
-  tags: ['forc_packages']
-  
-- include: "010-config.yml"
-  tags: ['forc_config']
+- name: Package installation tasks
+  import_tasks: "005-packages.yml"
+  tags:
+    - forc_packages
 
-- include: "015-forc.yml"
-  tags: ['forc_forc']
+- name: Configuration tasks
+  import_tasks: "010-config.yml"
+  tags:
+    - forc_config
 
-- include: "020-openresty.yml"
-  tags: ['forc_openresty']
+- name: FORC tasks
+  import_tasks: "015-forc.yml"
+  tags:
+    - forc_forc
+
+- name: OpenResty installation tasks
+  import_tasks: "020-openresty.yml"
   when: INSTALL_OPENRESTY
+  tags:
+    - forc_openresty
 
-- include: "025-backup.yml"
-  tags: ["forc-backup"]
+- name: Backup tasks
+  import_tasks: "025-backup.yml"
   when: FORC_BACKUP_ENABLED
-
+  tags:
+    - forc_backup
