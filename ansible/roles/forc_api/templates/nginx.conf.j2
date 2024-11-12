@@ -86,7 +86,7 @@ http {
     }
     {% else %}
 server {
-    listen {{ FORC_LOCAL_NETWORK }}:{{ FORC_SERVICE_PORT }};
+    listen {{ FORC_LOCAL_IP }}:{{ FORC_SERVICE_PORT }};
     location / {
             proxy_pass http://unix:/var/run/forc.sock;
             }
