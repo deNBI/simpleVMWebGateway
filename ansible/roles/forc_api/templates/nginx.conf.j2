@@ -50,26 +50,48 @@ http {
 
 
 
+
+    {% if FORC_SERVICE_USE_HTTPS %}
     server {
         listen {{ FORC_SERVICE_PORT }} ssl http2;
         ssl_certificate  /etc/letsencrypt/live/{{ DOMAIN }}/fullchain.pem;
         ssl_certificate_key  /etc/letsencrypt/live/{{ DOMAIN }}/privkey.pem;
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
-        ssl_prefer_server_ciphers on;
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload";
-        add_header X-Frame-Options "SAMEORIGIN";
-        add_header X-Content-Type-Options nosniff;
-        add_header X-XSS-Protection "1; mode=block";
-        add_header Referrer-Policy 'strict-origin';
         ssl_stapling on;
         ssl_stapling_verify on;
-
         location / {
-                proxy_pass http://unix:/var/run/forc.sock;
-                }
+            access_by_lua_block {
+                -- Start actual openid authentication procedure
+                local res, err = require("resty.openidc").authenticate(opts2)
+                -- If it fails for some reason, escape via HTTP 500
+                if err then
+                        ngx.status = 500
+                        ngx.say(err)
+                        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+                end
 
+                ngx.req.set_header("X-Auth-Audience", res.id_token.aud)
+                ngx.req.set_header("X-Auth-Email", res.id_token.email)
+                ngx.req.set_header("X-Auth-ExpiresIn", res.id_token.exp)
+                ngx.req.set_header("X-Auth-Name", res.id_token.name)
+                ngx.req.set_header("X-Auth-Subject", res.id_token.sub)
+                ngx.req.set_header("X-Auth-Userid", res.id_token.preferred_username)
+                ngx.req.set_header("X-Auth-Username", res.id_token.preferred_username)
+                ngx.req.set_header("X-Auth-Locale", res.id_token.locale)
+
+            }
         }
+
+    }
+    {% else %}
+server {
+    listen {{ FORC_LOCAL_IP }}:{{ FORC_SERVICE_PORT }};
+    location / {
+            proxy_pass http://unix:/var/run/forc.sock;
+            }
+}
+    {% endif %}
 
 
     server {
