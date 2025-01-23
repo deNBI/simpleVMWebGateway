@@ -1,6 +1,0 @@
----
-# defaults file for forc_api
-
-OPENRESTY_WORKER_PROCESSES: 10
-OPENRESTY_DNS_SERVER: 8.8.8.8
-FORC_INSTALLATION_PATH: /opt/
