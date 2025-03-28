@@ -23,8 +23,10 @@ log_config = {
         },
         "file": {
             "formatter": "default",
-            "class": "logging.FileHandler",
-            "filename": "/var/log/all_forc_logs.log"
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "/var/log/all_forc_logs.log",
+            "maxBytes": 25 * 1024 * 1024, # 25 megabytes
+            "backupCount": 4
         },
     },
     "loggers": {
