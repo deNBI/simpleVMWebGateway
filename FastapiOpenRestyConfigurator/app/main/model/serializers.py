@@ -27,7 +27,7 @@ tags_metadata = [
 ]
 
 owner_regex = r'^[a-zA-Z0-9@.-]{30,}$'
-user_key_url_regex = r"^[a-zA-Z0-9_]{3,25}$"
+user_key_url_regex = r"^[a-zA-Z0-9_-]{3,25}$"
 upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})$"
 
 
