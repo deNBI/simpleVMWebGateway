@@ -93,3 +93,40 @@ An ansible role is included in this repo [here](ansible/roles/forc_api/).
 
 ### Docker
 A docker deployment example is stated [here](docker/)
+
+
+### 🔧 DNS Resolver Configuration for OpenResty (NGINX + Lua)
+
+In some environments (e.g., Berlin), the default resolver `8.8.8.8` may **not be reachable due to network restrictions** or firewall rules. This can lead to DNS resolution failures in OpenResty, especially when using Lua modules like `lua-resty-openidc`.
+
+To ensure reliable DNS resolution, the `resolver` directive in `nginx.conf` must be updated with the actual DNS servers used by the system.
+
+---
+
+### ✅ How to Find the Correct Resolver
+
+Run the following command on the server:
+
+```bash
+resolvectl status
+```
+
+Look for the DNS Servers: entry under the active network interface (usually something like enpXsY). Example output:
+
+```bash
+DNS Servers: 10.57.196.4 10.57.196.5
+```
+
+These are the real upstream DNS servers used by the system and should be configured in your NGINX/OpenResty config.
+
+⚙️ How to Update nginx.conf
+
+Open your nginx.conf file (usually located at /usr/local/openresty/nginx/conf/nginx.conf) and add or update the resolver directive inside the http {} block (or the relevant server {} block):
+```bash
+http {
+    resolver 10.57.196.4 10.57.196.5 valid=300s;
+    resolver_timeout 5s;
+
+    # ... other config ...
+}
+```
