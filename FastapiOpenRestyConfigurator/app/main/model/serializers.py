@@ -84,6 +84,12 @@ class BackendIn(BackendBase):
         description="Inject the full url (with protocol) for the real location of the backend service in the template.",
         example="http://192.168.0.1:8787/"
     )
+    only_allow_owner: bool = Field(
+        True,
+        title="Authorization for the research environment",
+        description="If set to true, only the owner of the backend is allowed to access it.",
+        example=False
+    )
 
     @validator("user_key_url")
     def user_key_url_validation(cls, v):
@@ -143,6 +149,7 @@ class BackendTemp(BackendIn, BackendOut):
     template_version: str = None
     user_key_url: str = None
     upstream_url: str = None
+    only_allow_owner: bool = None
 
 
 class Template(BaseModel):

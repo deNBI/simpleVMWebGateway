@@ -46,6 +46,21 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
         raise HTTPException(status_code=400)
 
 
+@router.post(
+    "/backends/{backend_id}/auth/{enable_auth}",
+    tags=["Backends"],
+    summary="Set owner authorization to true/false for an existing backend."
+)
+async def backend_update_auth(backend_id: int, enable_auth: bool, api_key: APIKey = Depends(get_api_key)):
+    backend_id = int(secure_filename(str(backend_id)))
+    logger.info(f"Updating backend authorization for backend id: ${backend_id}")
+    ok = await backend_service.update_backend_authorization(backend_id, enable_auth)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Backend not found or update failed.")
+        return {"error": "Backend not found or update failed."}
+    return {"auth": f"{str(enable_auth).lower()}"}
+
+
 @router.get(
     "/backends/{backend_id}",
     response_model=BackendOut,

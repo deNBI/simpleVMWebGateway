@@ -30,11 +30,20 @@ async def generate_backend_by_template(backend_temp: BackendTemp, suffix_number)
         return None
     template = templateEnv.get_template(assembled_template_file_name)
 
+    logger.info({
+        "event": "templating_vars",
+        "only_allow_owner_value": backend_temp.only_allow_owner,
+        "only_allow_owner_type": type(backend_temp.only_allow_owner).__name__,
+        "template": assembled_template_file_name,
+    })
+    logger.info(f"template: {template}")
+
     rendered_backend = template.render(
         key_url=f"{backend_temp.user_key_url}_{suffix_number}",
         owner=backend_temp.owner,
         backend_id=backend_temp.id,
         forc_backend_path=settings.FORC_BACKEND_PATH,
-        location_url=backend_temp.upstream_url
+        location_url=backend_temp.upstream_url,
+        only_allow_owner=backend_temp.only_allow_owner
     )
     return rendered_backend
