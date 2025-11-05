@@ -53,11 +53,13 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
 )
 async def backend_update_auth(backend_id: int, enable_auth: bool, api_key: APIKey = Depends(get_api_key)):
     backend_id = int(secure_filename(str(backend_id)))
-    logger.info(f"Updating backend authorization for backend id: ${backend_id}")
-    ok = await backend_service.update_backend_authorization(backend_id, enable_auth)
-    if not ok:
-        raise HTTPException(status_code=404, detail="Backend not found or update failed.")
-        return {"error": "Backend not found or update failed."}
+    logger.info(f"Updating backend authorization for backend id: {backend_id}")
+    try:
+        await backend_service.update_backend_authorization(backend_id, enable_auth)
+    except NotFound:
+        raise HTTPException(status_code=404, detail="Backend not found.")
+    except InternalServerError:
+        raise HTTPException(status_code=500, detail="Internal server error.")
     return {"auth": f"{str(enable_auth).lower()}"}
 
 
