@@ -54,6 +54,14 @@ async def get_backends() -> List[BackendOut]:
     return valid_backends
 
 
+async def get_backends_by_id(backend_id: int) -> BackendOut:
+    valid_backends: List[BackendOut] = await get_backends()
+    for backend in valid_backends:
+        if int(backend.id) == int(backend_id):
+            return backend
+    raise NotFound(f"Backend {backend_id} was not found.")
+
+
 async def get_backends_upstream_urls() -> Dict[str, List[BackendOut]]:
     valid_backends: List[BackendOut] = await get_backends()
     upstream_urls = {}
@@ -159,35 +167,28 @@ async def delete_backend(backend_id) -> bool:
 
 
 async def update_backend_authorization(backend_id: int, auth_enable: bool) -> bool:
-    # look up backend by id
-    backends = await get_backends()
-    target = next((b for b in backends if int(b.id) == int(backend_id)), None)
-    if not target:
-        logger.warning(f"Backend {backend_id} not found for auth-switch.")
-        return False
+    backend = await get_backends_by_id(backend_id)
 
     # extract upstream_url from file
-    upstream_url = extract_proxy_pass(target.file_path)
+    upstream_url = extract_proxy_pass(backend.file_path)
     if not upstream_url:
-        logger.error(f"Could not extract proxy_pass from {target.file_path}")
+        logger.error(f"Could not extract proxy_pass from {backend.file_path}")
         return False
 
     # get existing location_url and user_key_url
     try:
-        base_key, suffix = target.location_url.rsplit("_", 1)
+        base_key, suffix = backend.location_url.rsplit("_", 1)
     except ValueError:
-        logger.error(f"location_url has no suffix pattern: {target.location_url}")
+        logger.error(f"location_url has no suffix pattern: {backend.location_url}")
         return False
     logger.info(f"Base key: {base_key}, Suffix: {suffix}")
 
     # build new temp payload
     try:
         temp_payload = BackendIn(
-            #id=str(backend_id),
-            owner=target.owner,
-            #location_url=target.location_url,
-            template=target.template,
-            template_version=target.template_version,
+            owner=backend.owner,
+            template=backend.template,
+            template_version=backend.template_version,
             user_key_url=base_key,
             upstream_url=upstream_url,
             only_allow_owner=auth_enable, # set new auth flag
@@ -197,29 +198,10 @@ async def update_backend_authorization(backend_id: int, auth_enable: bool) -> bo
         return False
     logger.info(f"temp_payload: {temp_payload}") 
 
-    # generate new backend contents
-    new_contents = await create_backend(temp_payload, id=str(backend_id), location_url=target.location_url)
+    # generate new backend contents with additional kwargs to persist backend_id and location_url
+    new_contents = await create_backend(temp_payload, id=str(backend_id), location_url=backend.location_url)
     logger.info(f"New contents: {new_contents}") 
     if not new_contents:
         logger.error("Templating returned empty result.")
         return False
     return True
-
-    """ safely write new contents to file
-    tmp_path = f"{target.file_path}.tmp"
-    try:
-        with open(tmp_path, "w") as f:
-            f.write(new_contents)
-        os.replace(tmp_path, target.file_path) # atomic replace, no downtime
-    except OSError as e:
-        logger.exception(f"Failed to write/replace backend file: {e}")
-        try:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-        except OSError:
-            pass
-        return False
-
-    # reload openResty
-    await reload_openresty()
-    return True"""
