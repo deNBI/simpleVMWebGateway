@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     Reads settings from .env file.
     """
     FORC_VERSION: str = '0.2'
-    DEBUG: bool = True #temporary !!!!!!!!!
-    LOG_LEVEL: str = "DEBUG" #temporary !!!!!!!!!
+    DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"
     FORC_API_KEY: SecretStr
     FORC_SECRET_KEY: SecretStr = 'my_precious_secret_key'
     FORC_BACKEND_PATH: DirectoryPath

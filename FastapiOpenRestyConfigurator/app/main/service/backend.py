@@ -54,7 +54,7 @@ async def get_backends() -> List[BackendOut]:
     return valid_backends
 
 
-async def get_backends_by_id(backend_id: int) -> BackendOut:
+async def get_backend_by_id(backend_id: int) -> BackendOut:
     valid_backends: List[BackendOut] = await get_backends()
     for backend in valid_backends:
         if int(backend.id) == int(backend_id):
@@ -151,6 +151,8 @@ async def delete_backend(backend_id) -> bool:
     for file in backend_path_files:
         match = re.fullmatch(file_regex, file)
         if not match:
+            if file == "users" or file == "scripts":
+                continue
             logger.warning(f"Found a backend file with wrong naming, skipping it: {file}")
             continue
         if int(match.group(1)) == int(backend_id):
@@ -163,11 +165,11 @@ async def delete_backend(backend_id) -> bool:
             except OSError as e:
                 logger.warning(f"Was not able to delete backend with id: {backend_id} ERROR: {e}")
                 raise InternalServerError("Server was not able to delete this backend. Contact the admin.")
-    raise NotFound("Backend was not found.")
+    raise NotFound(f"Backend {backend_id} was not found.")
 
 
-async def update_backend_authorization(backend_id: int, auth_enable: bool) -> bool:
-    backend = await get_backends_by_id(backend_id)
+async def update_backend_authorization(backend_id: int, auth_enable: bool):
+    backend = await get_backend_by_id(backend_id)
 
     # extract upstream_url from file
     upstream_url = extract_proxy_pass(backend.file_path)
@@ -191,7 +193,7 @@ async def update_backend_authorization(backend_id: int, auth_enable: bool) -> bo
             template_version=backend.template_version,
             user_key_url=base_key,
             upstream_url=upstream_url,
-            only_allow_owner=auth_enable, # set new auth flag
+            auth_enabled=auth_enable, # set new auth flag
         )
     except Exception as e:
         logger.error(f"Error building temp payload for backend update: {e}")
@@ -204,4 +206,4 @@ async def update_backend_authorization(backend_id: int, auth_enable: bool) -> bo
     if not new_contents:
         logger.error("Templating returned empty result.")
         return False
-    return True
+    return new_contents

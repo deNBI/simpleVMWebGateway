@@ -4,7 +4,7 @@ Backend view.
 import logging
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
 from fastapi.openapi.models import APIKey
 from werkzeug.exceptions import NotFound, InternalServerError
@@ -47,20 +47,25 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
 
 
 @router.post(
-    "/backends/{backend_id}/auth/{enable_auth}",
+    "/backends/{backend_id}/auth/",
+    response_model=BackendOut,
     tags=["Backends"],
     summary="Set owner authorization to true/false for an existing backend."
 )
-async def backend_update_auth(backend_id: int, enable_auth: bool, api_key: APIKey = Depends(get_api_key)):
+async def backend_update_auth(backend_id: int, body: dict = Body(...), api_key: APIKey = Depends(get_api_key)):
     backend_id = int(secure_filename(str(backend_id)))
     logger.info(f"Updating backend authorization for backend id: {backend_id}")
+    enable_auth = body.get("auth_enabled", None)
+    if enable_auth is None or not isinstance(enable_auth, bool):
+        logger.error(f"auth_enabled is required and must be a boolean, backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
+        raise HTTPException(status_code=422,
+                            detail=f"auth_enabled is required and must be a boolean, backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
     try:
-        await backend_service.update_backend_authorization(backend_id, enable_auth)
+        return await backend_service.update_backend_authorization(backend_id, enable_auth)
     except NotFound:
-        raise HTTPException(status_code=404, detail="Backend not found.")
+        raise HTTPException(status_code=404, detail=f"Backend with id {backend_id} not found.")
     except InternalServerError:
         raise HTTPException(status_code=500, detail="Internal server error.")
-    return {"auth": f"{str(enable_auth).lower()}"}
 
 
 @router.get(

@@ -32,8 +32,8 @@ async def generate_backend_by_template(backend_temp: BackendTemp, suffix_number)
 
     logger.info({
         "event": "templating_vars",
-        "only_allow_owner_value": backend_temp.only_allow_owner,
-        "only_allow_owner_type": type(backend_temp.only_allow_owner).__name__,
+        "auth_enabled_value": backend_temp.auth_enabled,
+        "auth_enabled_type": type(backend_temp.auth_enabled).__name__,
         "template": assembled_template_file_name,
     })
     logger.info(f"template: {template}")
@@ -44,6 +44,6 @@ async def generate_backend_by_template(backend_temp: BackendTemp, suffix_number)
         backend_id=backend_temp.id,
         forc_backend_path=settings.FORC_BACKEND_PATH,
         location_url=backend_temp.upstream_url,
-        only_allow_owner=backend_temp.only_allow_owner
+        auth_enabled=backend_temp.auth_enabled
     )
     return rendered_backend
