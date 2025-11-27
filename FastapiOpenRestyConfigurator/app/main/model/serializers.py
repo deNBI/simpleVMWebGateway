@@ -28,7 +28,7 @@ tags_metadata = [
 
 owner_regex = r'^[a-zA-Z0-9@.-]{30,}$'
 user_key_url_regex = r"^[a-zA-Z0-9_-]{3,25}$"
-upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})$"
+upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})(/[a-zA-Z0-9_-]+/)?$"
 
 
 class BackendBase(BaseModel):
@@ -88,7 +88,7 @@ class BackendIn(BackendBase):
         ...,
         title="Upstream URL",
         description="Inject the full url (with protocol) for the real location of the backend service in the template.",
-        example="http://192.168.0.1:8787/"
+        example="http://192.168.0.1:8787/guacamole/"
     )
 
     @validator("user_key_url")

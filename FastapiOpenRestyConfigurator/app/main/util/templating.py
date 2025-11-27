@@ -20,30 +20,31 @@ except jinja2.exceptions.TemplatesNotFound:
     logger.error("Was not able to load template engine. Adjust the templates_path in the config.")
 
 
-async def generate_backend_by_template(backend_temp: BackendTemp, suffix_number):
+async def generate_backend_by_template(backend_temp: BackendTemp, suffix_number) -> str | None:
+    logger.debug(f"Generating backend from template: {backend_temp.template} with version: {backend_temp.template_version}")
     if not templateLoader or not templateEnv:
         logger.error("The template engine is not loaded. Can't generate backend.")
         return None
-    assembled_template_file_name = f"{backend_temp.template}%{backend_temp.template_version}.conf"
-    if not os.path.isfile(f"{settings.FORC_TEMPLATE_PATH}/{assembled_template_file_name}"):
-        logger.error(f"Not able to find {settings.FORC_TEMPLATE_PATH}/{assembled_template_file_name}")
+    assembled_template_filename = f"{backend_temp.template}%{backend_temp.template_version}.conf"
+    if not os.path.isfile(f"{settings.FORC_TEMPLATE_PATH}/{assembled_template_filename}"):
+        logger.error(f"Not able to find {settings.FORC_TEMPLATE_PATH}/{assembled_template_filename}")
         return None
-    template = templateEnv.get_template(assembled_template_file_name)
+    template = templateEnv.get_template(assembled_template_filename)
 
     logger.info({
         "event": "templating_vars",
-        "auth_enabled_value": backend_temp.auth_enabled,
-        "auth_enabled_type": type(backend_temp.auth_enabled).__name__,
-        "template": assembled_template_file_name,
+        "auth_enabled": backend_temp.auth_enabled,
+        "assembled template filename": assembled_template_filename,
+        "template": template
     })
-    logger.info(f"template: {template}")
 
     rendered_backend = template.render(
-        key_url=f"{backend_temp.user_key_url}_{suffix_number}",
-        owner=backend_temp.owner,
-        backend_id=backend_temp.id,
-        forc_backend_path=settings.FORC_BACKEND_PATH,
-        location_url=backend_temp.upstream_url,
-        auth_enabled=backend_temp.auth_enabled
+        key_url = f"{backend_temp.user_key_url}_{suffix_number}",
+        owner = backend_temp.owner,
+        backend_id = backend_temp.id,
+        forc_backend_path = settings.FORC_BACKEND_PATH,
+        location_url = backend_temp.upstream_url,
+        auth_enabled = backend_temp.auth_enabled
     )
+    logger.debug(f"Rendered backend: {rendered_backend}")
     return rendered_backend

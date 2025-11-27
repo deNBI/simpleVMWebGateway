@@ -53,9 +53,9 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
     summary="Set owner authorization to true/false for an existing backend."
 )
 async def backend_update_auth(backend_id: int, body: dict = Body(...), api_key: APIKey = Depends(get_api_key)):
-    backend_id = int(secure_filename(str(backend_id)))
-    logger.info(f"Updating backend authorization for backend id: {backend_id}")
+    backend_id = int(secure_filename(str(backend_id))) # TODO: do we need secure_filename for int?
     enable_auth = body.get("auth_enabled", None)
+    logger.debug(f"Updating backend authorization to {enable_auth} for backend id: {backend_id}")
     if enable_auth is None or not isinstance(enable_auth, bool):
         logger.error(f"auth_enabled is required and must be a boolean, backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
         raise HTTPException(status_code=422,
