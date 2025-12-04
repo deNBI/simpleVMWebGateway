@@ -28,7 +28,7 @@ tags_metadata = [
 
 owner_regex = r'^[a-zA-Z0-9@.-]{30,}$'
 user_key_url_regex = r"^[a-zA-Z0-9_-]{3,25}$"
-upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})$"
+upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})(/[a-zA-Z0-9_-]+/)?$"
 
 
 class BackendBase(BaseModel):
@@ -52,6 +52,12 @@ class BackendBase(BaseModel):
         title="Template version",
         description="Version of the template the backend refers to.",
         example="v04"
+    )
+    auth_enabled: bool = Field(
+        True,
+        title="Authorization for the research environment",
+        description="If set to true, only the owner of the backend is allowed to access it.",
+        example=False
     )
 
     @validator("owner")
@@ -82,7 +88,7 @@ class BackendIn(BackendBase):
         ...,
         title="Upstream URL",
         description="Inject the full url (with protocol) for the real location of the backend service in the template.",
-        example="http://192.168.0.1:8787/"
+        example="http://192.168.0.1:8787/guacamole/"
     )
 
     @validator("user_key_url")
@@ -143,6 +149,7 @@ class BackendTemp(BackendIn, BackendOut):
     template_version: str = None
     user_key_url: str = None
     upstream_url: str = None
+    auth_enabled: bool = None
 
 
 class Template(BaseModel):
