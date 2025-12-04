@@ -46,5 +46,5 @@ async def generate_backend_by_template(backend_temp: BackendTemp, suffix_number)
         location_url = backend_temp.upstream_url,
         auth_enabled = backend_temp.auth_enabled
     )
-    logger.debug(f"Rendered backend: {rendered_backend}")
+    # logger.debug(f"Rendered backend: {rendered_backend}")
     return rendered_backend

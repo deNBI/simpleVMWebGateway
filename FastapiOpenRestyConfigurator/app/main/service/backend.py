@@ -114,8 +114,9 @@ async def generate_suffix_number(user_key_url):
 
 async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
     logger.debug(f"Creating backend for owner: {payload.owner} with template: {payload.template} version: {payload.template_version}")
-    # build payload as BackendTemp for generate_backend_by_template()
-    payload: BackendTemp = BackendTemp(**payload.dict())
+
+    # overwrite payload as BackendTemp for generate_backend_by_template()
+    payload: BackendTemp = BackendTemp(**payload.dict()) # TODO: is this cast necessary?
 
     if 'id' in kwargs: # override id and suffix if provided from update_backend_authorization()
         payload = payload.copy(update={'id': str(kwargs.get('id'))})
@@ -144,7 +145,7 @@ async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
     with open(f"{settings.FORC_BACKEND_PATH}/{filename}", 'w') as backend_file:
         backend_file.write(backend_file_contents)
 
-    # attempt to reload openrest
+    # attempt to reload openresty
     await reload_openresty()
     return payload
 
@@ -176,7 +177,7 @@ async def delete_backend(backend_id) -> bool:
     raise NotFound(f"Backend {backend_id} was not found.")
 
 
-async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> BackendTemp | bool:
+async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> BackendOut | bool:
     try:
         backend: BackendOut = await get_backend_by_id(backend_id)
     except NotFound as e:
@@ -198,26 +199,49 @@ async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> B
         return False
     logger.debug(f"Backend id: {backend.id}, Base key: {base_key}, Suffix: {suffix}")
 
-    # build new temp payload
+    # build new temp payload as BackendIn
     try:
-        temp_payload = BackendIn(
+        payload = BackendIn(
             owner = backend.owner,
             template = backend.template,
             template_version = backend.template_version,
             user_key_url = base_key,
-            upstream_url = upstream_url,
+            upstream_url = "/".join(upstream_url.split("/", 3)[:3]), # remove potential trailing path, see guacamole template
             auth_enabled = auth_enabled, # set new auth flag
         )
     except Exception as e:
         logger.error(f"Error building temp payload for backend update: {e}")
         return False
-    logger.info(f"temp_payload: {temp_payload}") 
+    # logger.debug(f"payload: {payload}")
 
     # generate new backend contents with temp_payload and additional kwargs to persist backend_id and location_url
-    new_contents = await create_backend(temp_payload, id=str(backend_id), location_url=backend.location_url)
-    logger.info(f"New contents: {new_contents}") 
+    new_contents = await create_backend(payload, id=str(backend_id), location_url=backend.location_url)
+    logger.debug(f"New contents: {new_contents}") 
     if not new_contents:
         logger.error("Templating returned empty result.")
         return False
-    logger.info(f"Updated backend authorization to {temp_payload.auth_enabled} for backend id: {backend_id}")
-    return new_contents
+
+    logger.info(f"Updated backend authorization to {payload.auth_enabled} for backend id: {backend_id}")
+    
+    # convert BackendTemp to BackendOut for returning
+    returning_backend: BackendOut = BackendOut(
+        id = new_contents.id,
+        owner = new_contents.owner,
+        location_url = new_contents.location_url,
+        template = new_contents.template,
+        template_version = new_contents.template_version,
+        auth_enabled = new_contents.auth_enabled,
+        file_path = await get_file_path_by_id(new_contents.id)
+    )
+
+    return returning_backend
+
+
+async def get_file_path_by_id(backend_id: int) -> str:
+    backends: List[BackendOut] = await get_backends()
+    logger.debug(f"Searching file path for backend id: {backend_id} in backends: {backends}")
+    for backend in backends:
+        if int(backend.id) == int(backend_id):
+            logger.debug(f"Returning found file path for backend id: {backend_id}: {backend.file_path}")
+            return backend.file_path
+    raise NotFound(f"Backend with id {backend_id} not found.")
