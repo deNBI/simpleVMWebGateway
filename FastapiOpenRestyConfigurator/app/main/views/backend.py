@@ -4,7 +4,7 @@ Backend view.
 import logging
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
 from fastapi.openapi.models import APIKey
 from werkzeug.exceptions import NotFound, InternalServerError
@@ -44,6 +44,28 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
         return backend
     else:
         raise HTTPException(status_code=400)
+
+
+@router.post(
+    "/backends/{backend_id}/auth/",
+    response_model=BackendOut,
+    tags=["Backends"],
+    summary="Set owner authorization to true/false for an existing backend."
+)
+async def backend_update_auth(backend_id: int, body: dict = Body(...), api_key: APIKey = Depends(get_api_key)):
+    backend_id = int(secure_filename(str(backend_id))) # TODO: do we need secure_filename for int?
+    enable_auth = body.get("auth_enabled", None)
+    logger.debug(f"Updating backend authorization to {enable_auth} for backend id: {backend_id}")
+    if enable_auth is None or not isinstance(enable_auth, bool):
+        logger.error(f"auth_enabled is required and must be a boolean, backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
+        raise HTTPException(status_code=422,
+                            detail=f"auth_enabled is required and must be a boolean, backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
+    try:
+        return await backend_service.update_backend_authorization(backend_id, enable_auth)
+    except NotFound:
+        raise HTTPException(status_code=404, detail=f"Backend with id {backend_id} not found.")
+    except InternalServerError:
+        raise HTTPException(status_code=500, detail="Internal server error.")
 
 
 @router.get(
