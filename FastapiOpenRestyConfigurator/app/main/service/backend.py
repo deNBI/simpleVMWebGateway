@@ -66,6 +66,17 @@ async def get_backend_by_id(backend_id: int) -> BackendOut:
     raise NotFound(f"Backend {backend_id} was not found.")
 
 
+async def get_file_path_by_id(backend_id: int) -> str:
+    backends: List[BackendOut] = await get_backends()
+    logger.debug(f"Searching file path for backend id: {backend_id} in backends: {backends}")
+    for backend in backends:
+        if int(backend.id) == int(backend_id):
+            logger.debug(f"Returning found file path for backend id: {backend_id}: {backend.file_path}")
+            return backend.file_path
+    raise NotFound(f"Backend with id {backend_id} not found.")
+
+
+
 async def get_backends_upstream_urls() -> Dict[str, List[BackendOut]]:
     valid_backends: List[BackendOut] = await get_backends()
     upstream_urls = {}
@@ -116,7 +127,7 @@ async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
     logger.debug(f"Creating backend for owner: {payload.owner} with template: {payload.template} version: {payload.template_version}")
 
     # overwrite payload as BackendTemp for generate_backend_by_template()
-    payload: BackendTemp = BackendTemp(**payload.dict()) # TODO: is this cast necessary?
+    payload: BackendTemp = BackendTemp(**payload.dict())
 
     if 'id' in kwargs: # override id and suffix if provided from update_backend_authorization()
         payload = payload.copy(update={'id': str(kwargs.get('id'))})
@@ -139,7 +150,7 @@ async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
         logger.info(f"Deleting existing Backend with same Upstream Url - {payload.upstream_url}")
         await delete_backend(backend.id)
 
-    # create backend file in filesystem, save BackendOut info in filename
+    # save BackendOut info in filename, create backend file in filesystem
     filename = f"{payload.id}%{payload.owner}%{payload.location_url}%{payload.template}%{payload.template_version}%{str(int(payload.auth_enabled))}.conf"
 
     with open(f"{settings.FORC_BACKEND_PATH}/{filename}", 'w') as backend_file:
@@ -235,13 +246,3 @@ async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> B
     )
 
     return returning_backend
-
-
-async def get_file_path_by_id(backend_id: int) -> str:
-    backends: List[BackendOut] = await get_backends()
-    logger.debug(f"Searching file path for backend id: {backend_id} in backends: {backends}")
-    for backend in backends:
-        if int(backend.id) == int(backend_id):
-            logger.debug(f"Returning found file path for backend id: {backend_id}: {backend.file_path}")
-            return backend.file_path
-    raise NotFound(f"Backend with id {backend_id} not found.")
