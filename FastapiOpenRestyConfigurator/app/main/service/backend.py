@@ -22,11 +22,36 @@ settings = get_settings()
 filename_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)%([01])\.conf"
 
 
+
+# HELPER FUNCTIONS
+
 async def random_with_n_digits(n):
     range_start = 10 ** (n - 1)
     range_end = (10 ** n) - 1
     return randint(range_start, range_end)
 
+async def generate_suffix_number(user_key_url):
+    current_backends: List[BackendOut] = await get_backends()
+    same_name_backend_ids = []
+
+    for backend in current_backends:
+        if backend.location_url.split("_")[0] == user_key_url:
+            same_name_backend_ids.append(int(backend.location_url.split("_")[1]))
+
+    if not same_name_backend_ids:
+        return "100"
+
+    same_name_backend_ids.sort()
+    highest_id = same_name_backend_ids[-1]
+    if highest_id == 999:
+        logger.warning("Reached max index number for requested user_key_url: " + user_key_url)
+        raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
+
+    return str(highest_id + 1)
+
+
+
+# CORE GETTER FUNCTIONS
 
 async def get_backends() -> List[BackendOut]:
     if not os.path.exists(settings.FORC_BACKEND_PATH) and not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
@@ -63,18 +88,7 @@ async def get_backend_by_id(backend_id: int) -> BackendOut:
     for backend in valid_backends:
         if int(backend.id) == int(backend_id):
             return backend
-    raise NotFound(f"Backend {backend_id} was not found.")
-
-
-async def get_file_path_by_id(backend_id: int) -> str:
-    backends: List[BackendOut] = await get_backends()
-    logger.debug(f"Searching file path for backend id: {backend_id} in backends: {backends}")
-    for backend in backends:
-        if int(backend.id) == int(backend_id):
-            logger.debug(f"Returning found file path for backend id: {backend_id}: {backend.file_path}")
-            return backend.file_path
-    raise NotFound(f"Backend with id {backend_id} not found.")
-
+    raise NotFound(f"Backend with id {backend_id} was not found.")
 
 
 async def get_backends_upstream_urls() -> Dict[str, List[BackendOut]]:
@@ -91,7 +105,21 @@ async def get_backends_upstream_urls() -> Dict[str, List[BackendOut]]:
     return upstream_urls
 
 
-def extract_proxy_pass(file_path):
+async def get_file_path_by_id(backend_id: int) -> str:
+    backends: List[BackendOut] = await get_backends()
+    logger.debug(f"Searching file path for backend id: {backend_id} in backends: {backends}")
+    for backend in backends:
+        if int(backend.id) == int(backend_id):
+            logger.debug(f"Returning found file path for backend id: {backend_id}: {backend.file_path}")
+            return backend.file_path
+    raise NotFound(f"Backend with id {backend_id} not found.")
+
+
+
+# EXTENDED GETTER FUNCTIONS
+
+def extract_proxy_pass(file_path) -> str | None:
+    # proxy_pass consists of upstream_url with potential trailing path, see guacamole template
     with open(file_path, 'r') as file:
         content = file.read()
 
@@ -100,41 +128,46 @@ def extract_proxy_pass(file_path):
     if match:
         return match.group(1)
     else:
+        logger.error(f"Could not extract proxy_pass from {file_path}")
         return None
 
 
-async def generate_suffix_number(user_key_url):
-    current_backends: List[BackendOut] = await get_backends()
-    same_name_backend_ids = []
+def get_upstream_url(file_path) -> str | None:
+    # extracts upstream_url from proxy_pass by removing trailing path, see guacamole template
+    proxy_pass = extract_proxy_pass(file_path)
+    if proxy_pass is None:
+        return None
 
-    for backend in current_backends:
-        if backend.location_url.split("_")[0] == user_key_url:
-            same_name_backend_ids.append(int(backend.location_url.split("_")[1]))
+    # split and rejoin to remove trailing path to remove potential trailing path, unaffected if no trailing path
+    upstream_url = "/".join(proxy_pass.split("/", 3)[:3])
+    return upstream_url
 
-    if not same_name_backend_ids:
-        return "100"
 
-    same_name_backend_ids.sort()
-    highest_id = same_name_backend_ids[-1]
-    if highest_id == 999:
-        logger.warning("Reached max index number for requested user_key_url: " + user_key_url)
-        raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
+def get_basekey_from_backend(backend: BackendOut) ->  str | None:
+    try:
+        base_key = backend.location_url.rsplit("_", 1)[0]
+        logger.debug(f"Backend id: {backend.id}, Base key: {base_key}")
+        return base_key
+    except ValueError:
+        logger.error(f"location_url has no suffix pattern: {backend.location_url}")
+        return None
 
-    return str(highest_id + 1)
 
+
+# CORE MUTATOR AND SERVICE FUNCTIONS
 
 async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
     logger.debug(f"Creating backend for owner: {payload.owner} with template: {payload.template} version: {payload.template_version}")
 
     # overwrite payload as BackendTemp for generate_backend_by_template()
-    payload: BackendTemp = BackendTemp(**payload.dict())
+    payload: BackendTemp = BackendTemp(**payload.model_dump())
 
     if 'id' in kwargs: # override id and suffix if provided from update_backend_authorization()
-        payload = payload.copy(update={'id': str(kwargs.get('id'))})
+        payload = payload.model_copy(update={'id': str(kwargs.get('id'))})
         suffix_number = str(kwargs.get('location_url')).split("_")[1]
     else:
         suffix_number = await generate_suffix_number(payload.user_key_url)
-        payload.id = str(await random_with_n_digits(10)) # TODO: should we refactor id: int? see delete_backend()
+        payload.id = str(await random_with_n_digits(10)) # TODO: should we refactor id: int? see delete_backend() maybe it has something to do with int beginning with 0
 
     # generate backend and location_url
     backend_file_contents = await generate_backend_by_template(payload, suffix_number)
@@ -188,61 +221,70 @@ async def delete_backend(backend_id) -> bool:
     raise NotFound(f"Backend {backend_id} was not found.")
 
 
-async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> BackendOut | bool:
-    try:
-        backend: BackendOut = await get_backend_by_id(backend_id)
-    except NotFound as e:
-        logger.error(f"Backend with id {backend_id} not found for authorization update.")
-        raise e
+async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> BackendOut | None:
+    backend = await get_backend_by_id(backend_id)
+    if not backend:
+        return None
 
-    # build temp payload as BackendIn for create_backend()
-    # extract upstream_url from file
-    upstream_url = extract_proxy_pass(backend.file_path)
-    if not upstream_url:
-        logger.error(f"Could not extract proxy_pass from {backend.file_path}")
-        return False
+    # build temporary payload as BackendIn for create_backend()
+    temp_payload = build_payload_for_auth_update(backend, auth_enabled)
+    if not temp_payload:
+        return None    
 
-    # get existing location_url and user_key_url
-    try:
-        base_key, suffix = backend.location_url.rsplit("_", 1)
-    except ValueError:
-        logger.error(f"location_url has no suffix pattern: {backend.location_url}")
-        return False
-    logger.debug(f"Backend id: {backend.id}, Base key: {base_key}, Suffix: {suffix}")
+    # generate new backend contents with temp_payload, additional kwargs to persist backend_id and location_url
+    new_contents = await create_backend(temp_payload, id=str(backend_id), location_url=backend.location_url)
+    logger.debug(f"New contents: {new_contents}") 
+    if not new_contents:
+        logger.error("Templating returned empty result.")
+        return None
 
-    # build new temp payload as BackendIn
+    logger.info(f"Updated backend authorization to {temp_payload.auth_enabled} for backend id: {backend_id}")
+    
+    # convert BackendTemp to BackendOut for returning
+    returning_backend = await convert_backend_temp_to_out(new_contents)
+
+    return returning_backend
+
+
+
+# HELPER FUNCTIONS FOR MUTATORS
+
+def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> BackendIn | None:
+    # fetch necessary info from existing BackendOut and build BackendIn payload for create_backend(), see update_backend_authorization()
+    upstream_url = get_upstream_url(backend.file_path)
+    base_key = get_basekey_from_backend(backend)
+    if not upstream_url or not base_key:
+        logger.error(f"Could not extract necessary info (upstream_url and base_key) from backend id: {backend.id} for updating authorization")
+        return None
+
+    # build new temporary payload as BackendIn
     try:
-        payload = BackendIn(
+        temp_payload = BackendIn(
             owner = backend.owner,
             template = backend.template,
             template_version = backend.template_version,
             user_key_url = base_key,
-            upstream_url = "/".join(upstream_url.split("/", 3)[:3]), # remove potential trailing path, see guacamole template
+            upstream_url = upstream_url,
             auth_enabled = auth_enabled, # set new auth flag
         )
+        return temp_payload
     except Exception as e:
         logger.error(f"Error building temp payload for backend update: {e}")
-        return False
-    # logger.debug(f"payload: {payload}")
+        return None
 
-    # generate new backend contents with temp_payload and additional kwargs to persist backend_id and location_url
-    new_contents = await create_backend(payload, id=str(backend_id), location_url=backend.location_url)
-    logger.debug(f"New contents: {new_contents}") 
-    if not new_contents:
-        logger.error("Templating returned empty result.")
-        return False
-
-    logger.info(f"Updated backend authorization to {payload.auth_enabled} for backend id: {backend_id}")
-    
-    # convert BackendTemp to BackendOut for returning
-    returning_backend: BackendOut = BackendOut(
-        id = new_contents.id,
-        owner = new_contents.owner,
-        location_url = new_contents.location_url,
-        template = new_contents.template,
-        template_version = new_contents.template_version,
-        auth_enabled = new_contents.auth_enabled,
-        file_path = await get_file_path_by_id(new_contents.id)
-    )
-
-    return returning_backend
+async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut | None:
+    # needed for returning backends to client
+    try:
+        backend_out = BackendOut(
+            id = backend_temp.id,
+            owner = backend_temp.owner,
+            location_url = backend_temp.location_url,
+            template = backend_temp.template,
+            template_version = backend_temp.template_version,
+            auth_enabled = backend_temp.auth_enabled,
+            file_path = await get_file_path_by_id(backend_temp.id)
+        )
+        return backend_out
+    except Exception as e:
+        logger.error(f"Error converting BackendTemp to BackendOut: {e}")
+        return None
