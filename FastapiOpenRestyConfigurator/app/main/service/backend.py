@@ -26,6 +26,7 @@ filename_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)%([01])\.conf"
 # HELPER FUNCTIONS
 
 async def random_with_n_digits(n):
+    # used for backend id generation, never starts with 0
     range_start = 10 ** (n - 1)
     range_end = (10 ** n) - 1
     return randint(range_start, range_end)
@@ -48,6 +49,10 @@ async def generate_suffix_number(user_key_url):
         raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
 
     return str(highest_id + 1)
+
+def generate_backend_filename(backend: BackendOut) -> str:
+    filename = f"{backend.id}%{backend.owner}%{backend.location_url}%{backend.template}%{backend.template_version}%{str(int(backend.auth_enabled))}.conf"
+    return filename
 
 
 
@@ -116,7 +121,7 @@ async def get_file_path_by_id(backend_id: int) -> str:
 
 
 
-# EXTENDED GETTER FUNCTIONS
+# FURTHER GETTER FUNCTIONS
 
 def extract_proxy_pass(file_path) -> str | None:
     # proxy_pass consists of upstream_url with potential trailing path, see guacamole template
@@ -162,12 +167,8 @@ async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
     # overwrite payload as BackendTemp for generate_backend_by_template()
     payload: BackendTemp = BackendTemp(**payload.model_dump())
 
-    if 'id' in kwargs: # override id and suffix if provided from update_backend_authorization()
-        payload = payload.model_copy(update={'id': str(kwargs.get('id'))})
-        suffix_number = str(kwargs.get('location_url')).split("_")[1]
-    else:
-        suffix_number = await generate_suffix_number(payload.user_key_url)
-        payload.id = str(await random_with_n_digits(10)) # TODO: should we refactor id: int? see delete_backend() maybe it has something to do with int beginning with 0
+    # generate or reuse backend id and suffix number
+    payload, suffix_number = await set_backend_id_and_suffix_for(payload, **kwargs)
 
     # generate backend and location_url
     backend_file_contents = await generate_backend_by_template(payload, suffix_number)
@@ -176,15 +177,12 @@ async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
 
     payload.location_url = f"{payload.user_key_url}_{suffix_number}"
 
-    # check for duplicated in ip and port
-    upstream_urls: Dict[str, List[BackendOut]] = await get_backends_upstream_urls()
-    matching_urls_backends: List[BackendOut] = upstream_urls.get(payload.upstream_url, [])
-    for backend in matching_urls_backends:
-        logger.info(f"Deleting existing Backend with same Upstream Url - {payload.upstream_url}")
-        await delete_backend(backend.id)
+    # check for duplicates and delete them before creating new backend
+    if not await delete_duplicate_backends(payload.upstream_url):
+        raise InternalServerError("Server was not able to delete duplicate backends before creating a new one.")
 
     # save BackendOut info in filename, create backend file in filesystem
-    filename = f"{payload.id}%{payload.owner}%{payload.location_url}%{payload.template}%{payload.template_version}%{str(int(payload.auth_enabled))}.conf"
+    filename = generate_backend_filename(payload)
 
     with open(f"{settings.FORC_BACKEND_PATH}/{filename}", 'w') as backend_file:
         backend_file.write(backend_file_contents)
@@ -249,6 +247,47 @@ async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> B
 
 # HELPER FUNCTIONS FOR MUTATORS
 
+async def set_backend_id_and_suffix_for(payload: BackendTemp, **kwargs) -> tuple[BackendTemp, str]:
+    if 'id' in kwargs: # override id and suffix if provided from update_backend_authorization()
+        payload = payload.model_copy(update={'id': str(kwargs.get('id'))})
+        suffix_number = str(kwargs.get('location_url')).split("_")[1]
+    else:
+        payload.id = str(await random_with_n_digits(10)) # TODO: should we refactor id: int? see delete_backend(). maybe it has something to do with int beginning with 0
+        suffix_number = await generate_suffix_number(payload.user_key_url)
+    logger.debug(f"Set backend id: {payload.id} with suffix number: {suffix_number}")
+    return payload, suffix_number
+
+
+async def delete_duplicate_backends(upstream_url: str) -> bool:
+    # check for duplicates in ip and port and delete them 
+    upstream_urls: Dict[str, List[BackendOut]] = await get_backends_upstream_urls()
+    matching_urls_backends: List[BackendOut] = upstream_urls.get(upstream_url, [])
+    success: bool = True
+    for backend in matching_urls_backends:
+        logger.info(f"Deleting existing Backend with same Upstream Url - {upstream_url}")
+        if not await delete_backend(backend.id):
+            success = False
+    return success
+
+
+async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut | None:
+    # needed for returning backends to client
+    try:
+        backend_out = BackendOut(
+            id = backend_temp.id,
+            owner = backend_temp.owner,
+            location_url = backend_temp.location_url,
+            template = backend_temp.template,
+            template_version = backend_temp.template_version,
+            auth_enabled = backend_temp.auth_enabled,
+            file_path = await get_file_path_by_id(backend_temp.id)
+        )
+        return backend_out
+    except Exception as e:
+        logger.error(f"Error converting BackendTemp to BackendOut: {e}")
+        return None
+
+
 def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> BackendIn | None:
     # fetch necessary info from existing BackendOut and build BackendIn payload for create_backend(), see update_backend_authorization()
     upstream_url = get_upstream_url(backend.file_path)
@@ -270,21 +309,4 @@ def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> Ba
         return temp_payload
     except Exception as e:
         logger.error(f"Error building temp payload for backend update: {e}")
-        return None
-
-async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut | None:
-    # needed for returning backends to client
-    try:
-        backend_out = BackendOut(
-            id = backend_temp.id,
-            owner = backend_temp.owner,
-            location_url = backend_temp.location_url,
-            template = backend_temp.template,
-            template_version = backend_temp.template_version,
-            auth_enabled = backend_temp.auth_enabled,
-            file_path = await get_file_path_by_id(backend_temp.id)
-        )
-        return backend_out
-    except Exception as e:
-        logger.error(f"Error converting BackendTemp to BackendOut: {e}")
         return None
