@@ -26,7 +26,7 @@ filename_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)%([01])\.conf"
 # HELPER FUNCTIONS
 
 async def random_with_n_digits(n):
-    # used for backend id generation, never starts with 0
+    # used for backend id generation (n=10), never starts with 0
     range_start = 10 ** (n - 1)
     range_end = (10 ** n) - 1
     return randint(range_start, range_end)
@@ -64,15 +64,15 @@ async def get_backends() -> List[BackendOut]:
         return []
     if len(os.listdir(settings.FORC_BACKEND_PATH)) == 0:
         return []
-    backend_path_files = os.listdir(settings.FORC_BACKEND_PATH)
-    logger.info(f"Files in backend_path: {backend_path_files}")
+    backend_path_filenames = os.listdir(settings.FORC_BACKEND_PATH)
+    logger.info(f"Files in backend_path: {backend_path_filenames}")
     valid_backends = []
-    for file in backend_path_files:
-        match = re.fullmatch(filename_regex, file)
+    for filename in backend_path_filenames:
+        match = re.fullmatch(filename_regex, filename)
         if not match:
-            if file == "users" or file == "scripts":
+            if filename == "users" or filename == "scripts":
                 continue
-            logger.warning("Found a backend file with wrong naming, skipping it: " + str(file))
+            logger.warning("Found a backend file with wrong naming, skipping it: " + str(filename))
             continue
         backend: BackendOut = BackendOut(
             id = match.group(1),
@@ -81,7 +81,7 @@ async def get_backends() -> List[BackendOut]:
             template = match.group(4),
             template_version = match.group(5),
             auth_enabled = bool(int(match.group(6))),
-            file_path = os.path.join(settings.FORC_BACKEND_PATH, file)
+            file_path = os.path.join(settings.FORC_BACKEND_PATH, filename)
         )
         logger.debug(f"Discovered backend: {backend}")
         valid_backends.append(backend)
@@ -193,30 +193,30 @@ async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
 
 
 async def delete_backend(backend_id) -> bool:
-    if not os.path.exists(settings.FORC_BACKEND_PATH) and not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
-        logger.error("Not able to access configured backend path.")
+    backend_path_filenames = get_valid_backend_filenames()
+    if not backend_path_filenames:
         return False
-    if len(os.listdir(settings.FORC_BACKEND_PATH)) == 0:
-        return False
-    backend_path_files = os.listdir(settings.FORC_BACKEND_PATH)
-    for file in backend_path_files:
-        match = re.fullmatch(filename_regex, file)
-        if not match:
-            if file == "users" or file == "scripts":
-                continue
-            logger.warning(f"Found a backend file with wrong naming, skipping it: {file}")
-            continue
-        if int(match.group(1)) == int(backend_id):
-            logger.info(f"Attempting to delete backend with id: {backend_id} as file: {settings.FORC_BACKEND_PATH}/{file}")
-            try:
-                os.remove(f"{settings.FORC_BACKEND_PATH}/{file}")
-                logger.info(f"Deleted backend with id: {backend_id}")
-                await reload_openresty()
-                return True
-            except OSError as e:
-                logger.warning(f"Was not able to delete backend with id: {backend_id} ERROR: {e}")
-                raise InternalServerError("Server was not able to delete this backend. Contact the admin.")
-    raise NotFound(f"Backend {backend_id} was not found.")
+
+    matching_backend_filenames = filter_backend_filenames_by_id(backend_path_filenames, backend_id)
+
+    amount_of_files = len(matching_backend_filenames)
+    if amount_of_files == 0:
+        raise NotFound(f"Backend {backend_id} was not found.")
+    if amount_of_files > 1:
+        logger.error(f"Found multiple backend files for backend id: {backend_id}, cannot delete.")
+        raise InternalServerError("Server found multiple backend files, cannot delete.")
+
+    filename = matching_backend_filenames[0]
+
+    logger.info(f"Attempting to delete backend with id: {backend_id} as file: {settings.FORC_BACKEND_PATH}/{filename}")
+    try:
+        os.remove(f"{settings.FORC_BACKEND_PATH}/{filename}")
+        logger.info(f"Deleted backend with id: {backend_id}")
+        await reload_openresty()
+        return True
+    except OSError as e:
+        logger.warning(f"Was not able to delete backend with id: {backend_id} ERROR: {e}")
+        raise InternalServerError("Server was not able to delete this backend. Contact the admin.")
 
 
 async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> BackendOut | None:
@@ -248,7 +248,8 @@ async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> B
 # HELPER FUNCTIONS FOR MUTATORS
 
 async def set_backend_id_and_suffix_for(payload: BackendTemp, **kwargs) -> tuple[BackendTemp, str]:
-    if 'id' in kwargs: # override id and suffix if provided from update_backend_authorization()
+    # override id and suffix if provided from update_backend_authorization()
+    if 'id' in kwargs and 'location_url' in kwargs:
         payload = payload.model_copy(update={'id': str(kwargs.get('id'))})
         suffix_number = str(kwargs.get('location_url')).split("_")[1]
     else:
@@ -286,6 +287,62 @@ async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut |
     except Exception as e:
         logger.error(f"Error converting BackendTemp to BackendOut: {e}")
         return None
+
+
+def check_backend_path_file() -> bool:
+    # check if backend path exists, is accessible and has files
+    if not os.path.exists(settings.FORC_BACKEND_PATH) and not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
+        logger.error("Not able to access configured backend path.")
+        return False
+    if len(os.listdir(settings.FORC_BACKEND_PATH)) == 0:
+        logger.error("No files found in backend path.")
+        return False
+    return True
+
+
+def check_backend_path_file_naming(backend_path_filename: str) -> bool | None:
+    # check for correct naming
+        match = re.fullmatch(filename_regex, backend_path_filename)
+        # skip files with wrong naming and log warning
+        if not match:
+            # exclude expected files from warning
+            if backend_path_filename == "users" or backend_path_filename == "scripts":
+                return None
+            logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
+            return None
+        # return backend id of the correctly named file
+        return True
+
+
+def get_backend_path_filenames() -> List[str] | None:
+    # get list of filenames in backend path
+    if not check_backend_path_file():
+        return None
+
+    return os.listdir(settings.FORC_BACKEND_PATH)
+
+
+def get_valid_backend_filenames() -> List[str] | None:
+
+    # get list of valid backend filenames in backend path
+    backend_path_filenames = get_backend_path_filenames()
+    if not backend_path_filenames:
+        return None
+
+    # check naming, skip invalid filenames
+    valid_backend_filenames = []
+    for filename in backend_path_filenames:
+        if not check_backend_path_file_naming(filename):
+            continue
+
+    # add valid filenames to list and return them
+        valid_backend_filenames.append(filename)
+    return valid_backend_filenames
+
+
+def filter_backend_filenames_by_id(backend_path_filenames: List[str], backend_id: int) -> List[str]:
+    # filter a list of backend filenames for matching backend id
+    return [filename for filename in backend_path_filenames if int(filename.split("%")[0]) == int(backend_id)]
 
 
 def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> BackendIn | None:
