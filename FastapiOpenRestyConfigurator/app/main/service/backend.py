@@ -25,30 +25,35 @@ filename_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)%([01])\.conf"
 
 # HELPER FUNCTIONS
 
-async def random_with_n_digits(n):
+def random_with_n_digits(n):
     # used for backend id generation (n=10), never starts with 0
     range_start = 10 ** (n - 1)
     range_end = (10 ** n) - 1
     return randint(range_start, range_end)
 
-async def generate_suffix_number(user_key_url):
+
+# TODO: unlikely but potential error cause, if two users have same randomly generated user_key_url!
+async def generate_suffix_number(user_key_url = None) -> str:
+    if user_key_url is None:
+        return "100"
+
+    # look for backends with same user_key_url
     current_backends: List[BackendOut] = await get_backends()
     same_name_backend_ids = []
-
     for backend in current_backends:
         if backend.location_url.split("_")[0] == user_key_url:
             same_name_backend_ids.append(int(backend.location_url.split("_")[1]))
-
     if not same_name_backend_ids:
         return "100"
 
+    # return highest found suffix number + 1 to iterate
     same_name_backend_ids.sort()
     highest_id = same_name_backend_ids[-1]
     if highest_id == 999:
         logger.warning("Reached max index number for requested user_key_url: " + user_key_url)
         raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
-
     return str(highest_id + 1)
+
 
 def generate_backend_filename(backend: BackendOut) -> str:
     filename = f"{backend.id}%{backend.owner}%{backend.location_url}%{backend.template}%{backend.template_version}%{str(int(backend.auth_enabled))}.conf"
@@ -253,7 +258,7 @@ async def set_backend_id_and_suffix_for(payload: BackendTemp, **kwargs) -> tuple
         payload = payload.model_copy(update={'id': str(kwargs.get('id'))})
         suffix_number = str(kwargs.get('location_url')).split("_")[1]
     else:
-        payload.id = str(await random_with_n_digits(10)) # TODO: should we refactor id: int? see delete_backend(). maybe it has something to do with int beginning with 0
+        payload.id = str(random_with_n_digits(10)) # TODO: should we refactor id: int? see delete_backend(). maybe it has something to do with int beginning with 0
         suffix_number = await generate_suffix_number(payload.user_key_url)
     logger.debug(f"Set backend id: {payload.id} with suffix number: {suffix_number}")
     return payload, suffix_number
@@ -359,7 +364,7 @@ def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> Ba
             owner = backend.owner,
             template = backend.template,
             template_version = backend.template_version,
-            user_key_url = base_key,
+            user_key_url = base_key, # add fetched fields
             upstream_url = upstream_url,
             auth_enabled = auth_enabled, # set new auth flag
         )
