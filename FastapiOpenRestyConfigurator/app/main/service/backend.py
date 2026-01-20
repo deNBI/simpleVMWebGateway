@@ -15,7 +15,7 @@ from ..util.templating import generate_backend_by_template
 from ..config import get_settings
 
 logger = logging.getLogger("service")
-settings = get_settings()
+
 
 # format of filename saves information of BackendOut by this schema:
 # {id}%{owner}%{location_url}%{template}%{template_version}%{auth_enabled}.conf
@@ -64,6 +64,7 @@ def generate_backend_filename(backend: BackendOut) -> str:
 # CORE GETTER FUNCTIONS
 
 async def get_backends() -> List[BackendOut]:
+    settings = get_settings()
     if not os.path.exists(settings.FORC_BACKEND_PATH) and not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
         logger.error("Not able to access configured backend path.")
         return []
@@ -167,6 +168,7 @@ def get_basekey_from_backend(backend: BackendOut) ->  str | None:
 # CORE MUTATOR AND SERVICE FUNCTIONS
 
 async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
+    settings = get_settings()
     logger.debug(f"Creating backend for owner: {payload.owner} with template: {payload.template} version: {payload.template_version}")
 
     # overwrite payload as BackendTemp for generate_backend_by_template()
@@ -198,6 +200,7 @@ async def create_backend(payload: BackendIn, **kwargs) -> BackendTemp:
 
 
 async def delete_backend(backend_id) -> bool:
+    settings = get_settings()
     backend_path_filenames = get_valid_backend_filenames()
     if not backend_path_filenames:
         return False
@@ -295,6 +298,7 @@ async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut |
 
 
 def check_backend_path_file() -> bool:
+    settings = get_settings()
     # check if backend path exists, is accessible and has files
     if not os.path.exists(settings.FORC_BACKEND_PATH) and not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
         logger.error("Not able to access configured backend path.")
@@ -320,6 +324,7 @@ def check_backend_path_file_naming(backend_path_filename: str) -> bool | None:
 
 
 def get_backend_path_filenames() -> List[str] | None:
+    settings = get_settings()
     # get list of filenames in backend path
     if not check_backend_path_file():
         return None
