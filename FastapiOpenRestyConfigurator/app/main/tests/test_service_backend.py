@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 
-from app.main.model.serializers import BackendOut, BackendTemp
+from app.main.model.serializers import BackendIn, BackendOut, BackendTemp
 
 from app.main.service import backend as backend_service
 
@@ -249,7 +249,7 @@ async def test_update_backend_authorization():
     "exception_expected, kwargs",
     [
         # SUCESS CASES
-        (False, None),
+        (False, {}),
         (False, {"id": 123, "location_url": "test_200"}),
         # FAIL CASES
         # one param is missing
@@ -271,19 +271,85 @@ async def test_set_backend_id_and_suffix(exception_expected, kwargs):
 
         try:
             backend, suffix_number = await backend_service.set_backend_id_and_suffix(BackendTemp.model_construct(), **kwargs)
+            backend: BackendTemp
+            suffix_number: int
             # success case
             if not exception_expected:
                 assert backend.id
                 assert suffix_number
-                if kwargs is None:
+                if kwargs == {}:
                     mock_generate_suffix_number.assert_awaited_once()
                 else:
                     mock_generate_suffix_number.assert_not_awaited()
-                    assert backend.id == kwargs["id"]
+                    assert int(backend.id) == int(kwargs["id"])
         # fail case
         except Exception as e:
             if not exception_expected:
                 raise e
+
+
+@pytest.mark.parametrize(
+    "delete_succeeded, proxy_pass, expected_delete_backend_ids",
+    [
+        (True, "http://192.168.0.1:8787/guacamole/", [12, 34]),
+        (True, "http://192.168.0.1:8787", [56, 78]),
+        (True, "http://1.1.1.1:4000", []),
+        (False, None, []),
+        (False, "", []),
+        (False, "not-a-url", [])
+    ]
+)
+@pytest.mark.asyncio
+async def test_delete_duplicate_backends(delete_succeeded, proxy_pass, expected_delete_backend_ids):
+    with patch(
+        "app.main.service.backend.get_backends_proxy_pass",
+        return_value = {
+            "http://192.168.0.1:8787/guacamole/": [
+                BackendOut.model_construct(
+                    id = 12,
+                    upstream_url = "http://192.168.0.1:8787/guacamole/",
+                ),
+                BackendOut.model_construct(
+                    id = 34,
+                    upstream_url = "http://192.168.0.1:8787/guacamole/",
+                ),
+            ],
+            "http://192.168.0.1:8787": [
+                BackendOut.model_construct(
+                    id = 56,
+                    upstream_url = "http://192.168.0.1:8787",
+                ),
+                BackendOut.model_construct(
+                    id = 78,
+                    upstream_url = "http://192.168.0.1:8787",
+                ),
+            ],
+            "http://1.1.1.1:4000": [
+                BackendOut.model_construct(
+                    id = 90,
+                    upstream_url = "http://1.1.1.1:4000/",
+                ),
+            ],
+        }
+    ) as mock_get_backends_upstream_urls, patch(
+        "app.main.service.backend.delete_backend",
+        return_value = delete_succeeded
+    ) as mock_delete_backend:
+
+        response_success: bool = await backend_service.delete_duplicate_backends(BackendIn.model_construct(upstream_url = proxy_pass))
+        mock_get_backends_upstream_urls.assert_awaited_once()
+        # success case
+        if delete_succeeded:
+            assert response_success is True
+            mock_delete_backend.assert_has_awaits(
+                [id in expected_backend_ids: call(backend_id=id)]
+            )
+        # fail case
+        else:
+            assert response_success is False
+            mock_delete_backend.assert_awaited()
+
+
 
 
 
@@ -291,10 +357,6 @@ async def test_set_backend_id_and_suffix(exception_expected, kwargs):
 
 
 """
-@pytest.mark.asyncio
-async def test_delete_duplicate_backends():
-    ...
-
 @pytest.mark.asyncio
 async def test_convert_backend_temp_to_out():
     ...

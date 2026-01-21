@@ -113,18 +113,21 @@ async def get_backend_by_id(backend_id: int) -> BackendOut:
     raise NotFound(f"Backend with id {backend_id} was not found.")
 
 
-async def get_backends_upstream_urls() -> Dict[str, List[BackendOut]]:
+async def get_backends_proxy_pass() -> Dict[str, List[BackendOut]]:
+    """
+    Returns a dictionary mapping proxy_pass values to lists of BackendOuts that use them.
+    """
     valid_backends: List[BackendOut] = await get_backends()
-    upstream_urls = {}
+    proxy_passes = {}
 
     for backend in valid_backends:
-        upstream_url = extract_proxy_pass(backend.file_path)
-        if upstream_url:
-            if upstream_url not in upstream_urls:
-                upstream_urls[upstream_url] = []
-            upstream_urls[upstream_url].append(backend)
+        proxy_pass = extract_proxy_pass(backend.file_path)
+        if proxy_pass:
+            if proxy_pass not in proxy_passes:
+                proxy_passes[proxy_pass] = []
+            proxy_passes[proxy_pass].append(backend)
 
-    return upstream_urls
+    return proxy_passes
 
 
 
@@ -147,7 +150,7 @@ def extract_proxy_pass(file_path) -> str | None:
 
 def get_upstream_url(file_path) -> str | None:
     """
-    Extracts upstream_url from proxy_pass by removing trailing path, see guacamole template
+    Extracts upstream_url from proxy_pass and removes trailing path, see guacamole template
     """
     proxy_pass = extract_proxy_pass(file_path)
     if proxy_pass is None or proxy_pass == "":
@@ -197,7 +200,7 @@ async def create_backend(payload_input: BackendIn, **kwargs) -> BackendTemp:
     payload.location_url = f"{payload.user_key_url}_{suffix_number}"
 
     # check for duplicates and delete them before creating new backend
-    if not await delete_duplicate_backends(payload.upstream_url):
+    if not await delete_duplicate_backends(payload):
         raise InternalServerError("Server was not able to delete duplicate backends before creating a new one.")
 
     # save BackendOut info in filename, create backend file in filesystem
@@ -285,7 +288,7 @@ async def set_backend_id_and_suffix(backend: BackendTemp, **kwargs) -> tuple[Bac
         suffix_number = suffix
     # if no id provided, generate id and suffix
     else:
-        if kwargs is not None:
+        if kwargs != {}:
             logger.warning(f"set_backend_id_and_suffix() received unexpected kwargs: {kwargs}")
             raise InternalServerError("Unexpected kwargs provided to set_backend_id_and_suffix().") # @reviewer: should we really error here?
         backend = backend.model_copy(update={'id': str(random_with_n_digits(10))})
@@ -293,15 +296,26 @@ async def set_backend_id_and_suffix(backend: BackendTemp, **kwargs) -> tuple[Bac
     return backend, suffix_number
 
 
-async def delete_duplicate_backends(upstream_url: str) -> bool:
-    # check for duplicates in ip and port and delete them 
-    upstream_urls: Dict[str, List[BackendOut]] = await get_backends_upstream_urls()
-    matching_urls_backends: List[BackendOut] = upstream_urls.get(upstream_url, [])
+# TODO: handle cases where same proxy_pass exists with and without trailing path (guacamole)
+async def delete_duplicate_backends(backend_with_proxy_pass: BackendIn) -> bool:
+    """
+    Checks for duplicates in proxy_pass (namely upstream_url) for a given backend and deletes all of them.
+    Returns only False, if a deletion failed. Returns True if no backends were found and thus deleted.
+    """
+    # get proxy_pass from provided backend
+    proxy_pass = backend_with_proxy_pass.upstream_url
+    # get all backends linked to the given proxy_pass
+    backends_proxy_passes: Dict[str, List[BackendOut]] = await get_backends_proxy_pass()
+    matching_backends: List[BackendOut] = backends_proxy_passes.get(proxy_pass, [])
+    # delete all matching backends
     success: bool = True
-    for backend in matching_urls_backends:
-        logger.info(f"Deleting existing Backend with same Upstream Url - {upstream_url}")
-        if not await delete_backend(backend.id):
-            success = False
+    if len(matching_backends) == 0:
+        logger.warning("No backends found for matching, proxy_pass: " + str(proxy_pass))
+    else:
+        for backend in matching_backends:
+            logger.info(f"Deleting existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
+            if not await delete_backend(backend_id = backend.id):
+                return False
     return success
 
 
