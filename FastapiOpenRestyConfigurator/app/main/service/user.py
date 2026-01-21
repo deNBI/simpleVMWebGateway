@@ -11,10 +11,10 @@ from werkzeug.utils import secure_filename
 from ..model.serializers import User
 
 logger = logging.getLogger("service")
-settings = get_settings()
 
 
 async def get_users(backend_id):
+    settings = get_settings()
     backend_id = secure_filename(str(backend_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
     if not os.path.exists(user_id_path) and not os.access(user_id_path, os.R_OK):
@@ -28,6 +28,7 @@ async def get_users(backend_id):
 
 
 async def add_user(backend_id, user_id):
+    settings = get_settings()
     backend_id = secure_filename(str(backend_id))
     if "@" in user_id:
         user_id_parts = user_id.split("@")
@@ -59,6 +60,7 @@ async def add_user(backend_id, user_id):
 
 
 async def delete_user(backend_id, user_id):
+    settings = get_settings()
     backend_id = secure_filename(str(backend_id))
     if "@" in user_id:
         user_id_parts = user_id.split("@")
@@ -93,6 +95,7 @@ async def delete_user(backend_id, user_id):
 
 
 async def delete_all(backend_id):
+    settings = get_settings()
     backend_id = secure_filename(str(backend_id))
     user_id_path = f"{settings.FORC_USER_PATH}/{backend_id}"
     if not os.path.exists(user_id_path):

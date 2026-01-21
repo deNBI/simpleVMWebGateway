@@ -4,47 +4,65 @@ Helper/service functions to generate backends out of templates.
 import jinja2
 import logging
 import os
+from functools import lru_cache
 
 from ..model.serializers import BackendTemp
 from ..config import get_settings
 
 logger = logging.getLogger("util")
-settings = get_settings()
-
-logger.info("Loading the templating engine.")
-
-try:
-    templateLoader = jinja2.FileSystemLoader(searchpath=settings.FORC_TEMPLATE_PATH)
-    templateEnv = jinja2.Environment(loader=templateLoader, autoescape=True)
-except jinja2.exceptions.TemplatesNotFound:
-    logger.error("Was not able to load template engine. Adjust the templates_path in the config.")
 
 
-async def generate_backend_by_template(backend_temp: BackendTemp, suffix_number) -> str | None:
-    logger.debug(f"Generating backend from template: {backend_temp.template} with version: {backend_temp.template_version}")
-    if not templateLoader or not templateEnv:
-        logger.error("The template engine is not loaded. Can't generate backend.")
+@lru_cache
+def _template_env():
+    """
+    Lazily initialize and cache the Jinja environment.
+    Called only at runtime, never at import time.
+    """
+    settings = get_settings()
+
+    logger.info("Loading the templating engine.")
+
+    loader = jinja2.FileSystemLoader(
+        searchpath=settings.FORC_TEMPLATE_PATH
+    )
+
+    env = jinja2.Environment(
+        loader=loader,
+        autoescape=True
+    )
+
+    return env, settings
+
+
+async def generate_backend_by_template(
+    backend_temp: BackendTemp,
+    suffix_number: int
+) -> str | None:
+
+    env, settings = _template_env()
+
+    assembled_template_filename = (
+        f"{backend_temp.template}%{backend_temp.template_version}.conf"
+    )
+
+    template_path = os.path.join(
+        settings.FORC_TEMPLATE_PATH,
+        assembled_template_filename
+    )
+
+    if not os.path.isfile(template_path):
+        logger.error(f"Template not found: {template_path}")
         return None
-    assembled_template_filename = f"{backend_temp.template}%{backend_temp.template_version}.conf"
-    if not os.path.isfile(f"{settings.FORC_TEMPLATE_PATH}/{assembled_template_filename}"):
-        logger.error(f"Not able to find {settings.FORC_TEMPLATE_PATH}/{assembled_template_filename}")
-        return None
-    template = templateEnv.get_template(assembled_template_filename)
 
-    logger.info({
-        "event": "templating_vars",
-        "auth_enabled": backend_temp.auth_enabled,
-        "assembled template filename": assembled_template_filename,
-        "template": template
-    })
+    template = env.get_template(assembled_template_filename)
 
     rendered_backend = template.render(
-        key_url = f"{backend_temp.user_key_url}_{suffix_number}",
-        owner = backend_temp.owner,
-        backend_id = backend_temp.id,
-        forc_backend_path = settings.FORC_BACKEND_PATH,
-        location_url = backend_temp.upstream_url,
-        auth_enabled = backend_temp.auth_enabled
+        key_url=f"{backend_temp.user_key_url}_{suffix_number}",
+        owner=backend_temp.owner,
+        backend_id=backend_temp.id,
+        forc_backend_path=settings.FORC_BACKEND_PATH,
+        location_url=backend_temp.upstream_url,
+        auth_enabled=backend_temp.auth_enabled,
     )
-    # logger.debug(f"Rendered backend: {rendered_backend}")
+
     return rendered_backend
