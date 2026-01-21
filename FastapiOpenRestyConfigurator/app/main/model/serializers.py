@@ -119,7 +119,7 @@ class BackendOut(BackendBase):
     """
     Backend class which holds information needed when returning a backend.
     """
-    id: int = Field(
+    id: int = Field( # @reviewer: should we rename id to backend_id for consistency?
         ...,
         title="ID",
         description="ID of the backend.",
