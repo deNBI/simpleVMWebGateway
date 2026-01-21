@@ -5,15 +5,13 @@ from app.main.model.serializers import BackendIn, BackendOut, BackendTemp
 
 from app.main.service import backend as backend_service
 
-from werkzeug.exceptions import NotFound
-
 file_path_example_1 = "/var/forc/backend_path/1234567890%testuser%animal_100%testtemplate%v01%0.conf"
 file_path_example_2 = "/var/forc/backend_path/9876543210%otheruser%cat_200%othertemplate%v02%1.conf"
 
 # TEST DATA
 
 # backend test cases: (exception_expected, filename, backend), see test_generate_backend_filename()
-test_backends = [
+test_backends_for_generate_backend_filename = [
     (False, "123%testuser%dog_100%testtemplate%v01%0.conf",
      BackendOut.model_construct(
         id = 123,
@@ -86,6 +84,129 @@ test_backends = [
         template_version = "v02",
         auth_enabled = None
         ))
+    ]
+# backend test cases: (exception_expected, backend), see test_convert_backend_temp_to_out()
+test_backends_for_convert_backend_temp_to_out = [
+    (False,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = "testuser",
+        location_url = "dog_100",
+        template = "testtemplate",
+        template_version = "v01",
+        user_key_url = "myRstudio",
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (False,
+     BackendOut.model_construct(
+        id = 456,
+        owner = "otheruser",
+        location_url = "ant_300",
+        template = "anothertemplate",
+        template_version = "v03",
+        user_key_url = "yourRstudio",
+        upstream_url = "http://1.1.1.1:8002",
+        auth_enabled = True,
+        file_path = "another_file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = None,
+        owner = "testuser",
+        location_url = "dog_100",
+        template = "testtemplate",
+        template_version = "v01",
+        user_key_url = "myRstudio",
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = None,
+        location_url = "dog_100",
+        template = "testtemplate",
+        template_version = "v01",
+        user_key_url = "myRstudio",
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = "testuser",
+        location_url = None,
+        template = "testtemplate",
+        template_version = "v01",
+        user_key_url = "myRstudio",
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = "testuser",
+        location_url = "dog_100",
+        template = None,
+        template_version = "v01",
+        user_key_url = "myRstudio",
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = "testuser",
+        location_url = "dog_100",
+        template = "testtemplate",
+        template_version = None,
+        user_key_url = "myRstudio",
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = "testuser",
+        location_url = "dog_100",
+        template = "testtemplate",
+        template_version = "v01",
+        user_key_url = None,
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = "testuser",
+        location_url = "dog_100",
+        template = "testtemplate",
+        template_version = "v01",
+        user_key_url = "myRstudio",
+        upstream_url = None,
+        auth_enabled = False,
+        file_path = "file_path"
+        )),
+    (True,
+     BackendTemp.model_construct(
+        id = 123,
+        owner = "testuser",
+        location_url = "dog_100",
+        template = "testtemplate",
+        template_version = "v01",
+        user_key_url = "myRstudio",
+        upstream_url = "http://192.168.0.1:4000",
+        auth_enabled = None,
+        file_path = None
+        )),
     ]
 
 
@@ -352,17 +473,32 @@ async def test_delete_duplicate_backends(delete_succeeded, proxy_pass, expected_
 
 
 @pytest.mark.parametrize(
-    "exception_expected, filename, backend",
-    test_backends
+    "exception_expected, backend",
+    test_backends_for_convert_backend_temp_to_out
 )
 @pytest.mark.asyncio
 async def test_convert_backend_temp_to_out(exception_expected, backend):
     with patch(
         "app.main.service.backend.get_backend_by_id",
-        return_value = BackendOut.model_construct(file_path = "test_path")
+        return_value = BackendOut.model_construct(file_path = backend.file_path)
     ) as mock_get_backend_by_id:
+        try:
+            backend_out = await backend_service.convert_backend_temp_to_out(backend)
+            if not exception_expected:
+                assert isinstance(backend_out, BackendOut)
+                mock_get_backend_by_id.assert_once_awaited_with(backend_id = backend.id)
+                assert backend_out.id == backend.id
+                assert backend_out.owner == backend.owner
+                assert backend_out.location_url == backend.location_url
+                assert backend_out.template == backend.template
+                assert backend_out.template_version == backend.template_version
+                assert backend_out.auth_enabled == backend.auth_enabled
+                assert backend_out.file_path == backend.file_path
+        except Exception as e:
+            if not exception_expected:
+                raise e
 
-        backend_out: BackendOut = await backend_service.convert_backend_temp_to_out(backend)
+
 
 
 
