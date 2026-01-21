@@ -8,8 +8,8 @@ from app.main.views import backend as backend_views
 @pytest.mark.parametrize(
     "exception_expected, backend_id, body",
     [
-        (False, 123, {"auth_enabled": True}),
         # success cases
+        (False, 123, {"auth_enabled": True}),
         (False, 123, {"auth_enabled": 1}),
         (False, 123, {"auth_enabled": 0}),
         (False, 123, {"auth_enabled": False}),

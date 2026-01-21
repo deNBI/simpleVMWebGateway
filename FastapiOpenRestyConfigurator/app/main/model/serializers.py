@@ -31,6 +31,8 @@ user_key_url_regex = r"^[a-zA-Z0-9_-]{3,25}$"
 upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})(/[a-zA-Z0-9_-]+/)?$"
 
 
+# TODO: needs refactoring to comply with python 3.10 and pydantic v2
+
 class BackendBase(BaseModel):
     """
     Base class for backend.
@@ -119,7 +121,7 @@ class BackendOut(BackendBase):
     """
     Backend class which holds information needed when returning a backend.
     """
-    id: int = Field( # @reviewer: should we rename id to backend_id for consistency?
+    id: int = Field( # TODO: needs refactoring: change type to int and rename to backend_id
         ...,
         title="ID",
         description="ID of the backend.",
@@ -150,6 +152,7 @@ class BackendTemp(BackendIn, BackendOut):
     user_key_url: str = None
     upstream_url: str = None
     auth_enabled: bool = None
+    file_path: str = None
 
 
 class Template(BaseModel):

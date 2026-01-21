@@ -33,38 +33,44 @@ def random_with_n_digits(n):
 
 
 # TODO: unlikely but potential error cause, if two users have same randomly generated user_key_url!
-async def generate_suffix_number(user_key_url: str = None) -> int:
+async def generate_suffix_number(user_key_url: str | None = None) -> int:
     if user_key_url is None:
         return 100
 
-    current_suffix_number = int(user_key_url.split("_")[1])
+    # extract current suffix number, check validity
+    current_suffix_number: int = int(user_key_url.split("_")[1])
     if current_suffix_number < 100 or current_suffix_number > 999:
-        logger.error("Invalid user_key_url provided for suffix generation: " + str(user_key_url))
+        logger.error("Invalid user_key_url provided for suffix generation: " + user_key_url)
         raise InternalServerError("Invalid user_key_url provided for suffix generation.")
 
     # look for backends with same user_key_url
-    current_backends: List[BackendOut] = await get_backends()
-    same_name_backend_ids = []
-    for backend in current_backends:
-        location_url = backend.location_url.split("_")
-        if location_url[0] == user_key_url:
-            same_name_backend_ids.append(int(location_url[1]))
-    if not same_name_backend_ids:
+    backends: List[BackendOut] = await get_backends()
+    same_name_backend_suffixes: List[int] = []
+    for backend in backends:
+        if backend.location_url == user_key_url:
+            suffix: int = int(backend.location_url.split("_")[1])
+            same_name_backend_suffixes.append(suffix)
+    if not same_name_backend_suffixes:
         return 100
 
     # return highest found suffix number + 1 to iterate
-    same_name_backend_ids.sort()
-    highest_id = same_name_backend_ids[-1]
+    same_name_backend_suffixes.sort()
+    highest_id: int = same_name_backend_suffixes[-1]
     if highest_id == 999:
         logger.warning("Reached max index number for requested user_key_url: " + user_key_url)
         raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
     return highest_id + 1
 
 
-def generate_backend_filename(backend: BackendOut) -> str | None:
-    backend = BackendOut.model_validate(backend) # ensure validity of backend
-    filename = f"{backend.id}%{backend.owner}%{backend.location_url}%{backend.template}%{backend.template_version}%{str(int(backend.auth_enabled))}.conf"
-    return filename
+def generate_backend_filename(backend: BackendOut) -> str:
+    b: BackendOut = backend
+    if b.id and b.owner and b.location_url and b.template and b.template_version and b.auth_enabled is not None:
+        return f"{str(b.id)}%{b.owner}%{b.location_url}%{b.template}%{b.template_version}%{str(int(b.auth_enabled))}.conf"
+    else:
+        logger.error("Not all necessary backend fields are set for filename generation: " + str(backend))
+        raise InternalServerError("Filename generation failed.")
+
+
 
 # CORE GETTER FUNCTIONS
 
@@ -86,7 +92,7 @@ async def get_backends() -> List[BackendOut]:
             logger.warning("Found a backend file with wrong naming, skipping it: " + str(filename))
             continue
         backend: BackendOut = BackendOut(
-            id = match.group(1),
+            id = int(match.group(1)),
             owner = match.group(2),
             location_url = match.group(3),
             template = match.group(4),
@@ -121,17 +127,13 @@ async def get_backends_upstream_urls() -> Dict[str, List[BackendOut]]:
     return upstream_urls
 
 
-async def get_file_path_by_id(backend_id: int) -> str:
-    backend: BackendOut = await get_backend_by_id(backend_id)
-    return backend.file_path
-
-
 
 # FURTHER GETTER FUNCTIONS
 
 def extract_proxy_pass(file_path) -> str | None:
     # proxy_pass consists of upstream_url with potential trailing path, see guacamole template
-    with open(file_path, 'r') as file: # @reviewer: add error handling, e.g. file_path = None ?
+    # TODO: add error handling, e.g. file_path = None
+    with open(file_path, 'r') as file:
         content = file.read()
 
     match = re.search(r'proxy_pass\s+(http[^\s;]+);', content)
@@ -144,9 +146,11 @@ def extract_proxy_pass(file_path) -> str | None:
 
 
 def get_upstream_url(file_path) -> str | None:
-    # extracts upstream_url from proxy_pass by removing trailing path, see guacamole template
+    """
+    Extracts upstream_url from proxy_pass by removing trailing path, see guacamole template
+    """
     proxy_pass = extract_proxy_pass(file_path)
-    if proxy_pass is None:
+    if proxy_pass is None or proxy_pass == "":
         return None
 
     # split and rejoin to remove trailing path to remove potential trailing path, unaffected if no trailing path
@@ -155,12 +159,21 @@ def get_upstream_url(file_path) -> str | None:
 
 
 def get_basekey_from_backend(backend: BackendOut) ->  str | None:
+    """
+    Extracts basekey from location_url by removing suffix pattern.
+    """
     try:
-        base_key = backend.location_url.rsplit("_", 1)[0]
-        logger.debug(f"Backend id: {backend.id}, Base key: {base_key}")
+        if backend is None or backend.location_url is None:
+            logger.error("backend or backend.location_url is None.")
+            return None
+        if "_" not in backend.location_url:
+            logger.error(f"location_url has no suffix pattern: {backend.location_url}")
+            return None
+        # split and return basekey
+        base_key = backend.location_url.split("_")[0]
         return base_key
     except ValueError:
-        logger.error(f"location_url has no suffix pattern: {backend.location_url}")
+        logger.error(f"could not get basekey from location_url: {backend.location_url}")
         return None
 
 
@@ -254,16 +267,30 @@ async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> B
 
 # HELPER FUNCTIONS FOR MUTATORS
 
-async def set_backend_id_and_suffix(payload: BackendTemp, **kwargs) -> tuple[BackendTemp, int]:
+async def set_backend_id_and_suffix(backend: BackendTemp, **kwargs) -> tuple[BackendTemp, int]:
+    """
+    Sets backend id and suffix number for a new backend.
+    If id and location_url are provided in kwargs, they are used to override.
+    Otherwise, a new id and suffix number are generated.
+    """
     # override id and suffix if provided from update_backend_authorization()
     if 'id' in kwargs and 'location_url' in kwargs:
-        payload = payload.model_copy(update={'id': str(kwargs.get('id'))})
-        suffix_number = int(str(kwargs.get('location_url')).split("_")[1])
+        id: str = str(kwargs.get('id'))
+        suffix: int = int(str(kwargs.get('location_url')).split("_")[1])
+        if not isinstance(id, str) or not isinstance(suffix, int):
+            logger.error("Provided id or location_url have wrong type.")
+            raise InternalServerError("Provided id or location_url have wrong type.")
+
+        backend = backend.model_copy(update={'id': id})
+        suffix_number = suffix
+    # if no id provided, generate id and suffix
     else:
-        payload.id = random_with_n_digits(10)
-        suffix_number = await generate_suffix_number(payload.user_key_url)
-    logger.debug(f"Set backend id: {payload.id} with suffix number: {suffix_number}")
-    return payload, suffix_number
+        if kwargs is not None:
+            logger.warning(f"set_backend_id_and_suffix() received unexpected kwargs: {kwargs}")
+            raise InternalServerError("Unexpected kwargs provided to set_backend_id_and_suffix().") # @reviewer: should we really error here?
+        backend = backend.model_copy(update={'id': str(random_with_n_digits(10))})
+        suffix_number = await generate_suffix_number(backend.user_key_url)
+    return backend, suffix_number
 
 
 async def delete_duplicate_backends(upstream_url: str) -> bool:
@@ -288,7 +315,7 @@ async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut |
             template = backend_temp.template,
             template_version = backend_temp.template_version,
             auth_enabled = backend_temp.auth_enabled,
-            file_path = await get_file_path_by_id(backend_temp.id)
+            file_path = (await get_backend_by_id(backend_temp.id)).file_path
         )
         return backend_out
     except Exception as e:
