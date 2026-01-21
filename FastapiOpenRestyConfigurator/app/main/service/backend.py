@@ -190,7 +190,7 @@ async def create_backend(payload_input: BackendIn, **kwargs) -> BackendTemp:
     payload: BackendTemp = BackendTemp(**payload_input.model_dump())
 
     # generate or reuse backend id and suffix number
-    payload, suffix_number = await set_backend_id_and_suffix#(payload, **kwargs)
+    payload, suffix_number = await set_backend_id_and_suffix(payload, **kwargs)
 
     # generate backend and location_url
     backend_file_contents = await generate_backend_by_template(payload, suffix_number)
@@ -314,7 +314,7 @@ async def delete_duplicate_backends(backend_with_proxy_pass: BackendIn) -> bool:
     else:
         for backend in matching_backends:
             logger.info(f"Deleting existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
-            if not await delete_backend(backend_id = backend.id):
+            if not delete_backend(backend_id = backend.id):
                 return False
     return success
 

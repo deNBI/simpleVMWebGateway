@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from app.main.model.serializers import BackendIn, BackendOut, BackendTemp
 
@@ -293,11 +293,10 @@ async def test_set_backend_id_and_suffix(exception_expected, kwargs):
     [
         (True, "http://192.168.0.1:8787/guacamole/", [12, 34]),
         (True, "http://192.168.0.1:8787", [56, 78]),
-        (True, "http://1.1.1.1:4000", []),
-        (False, None, []),
-        (False, "", []),
-        (False, "not-a-url", [])
+        (False, "http://192.168.0.1:8787", [56, 78]),
+        (True, "http://1.1.1.1:4000", [])
     ]
+        # not able to test cases like None, "", "not_valid" without a validator, TODO: can we use serializer.BackendIn validator?
 )
 @pytest.mark.asyncio
 async def test_delete_duplicate_backends(delete_succeeded, proxy_pass, expected_delete_backend_ids):
@@ -341,13 +340,33 @@ async def test_delete_duplicate_backends(delete_succeeded, proxy_pass, expected_
         # success case
         if delete_succeeded:
             assert response_success is True
-            mock_delete_backend.assert_has_awaits(
-                [id in expected_backend_ids: call(backend_id=id)]
-            )
+            if len(expected_delete_backend_ids) != 0:
+                mock_delete_backend.assert_has_awaits(
+                    [call(backend_id=id) for id in expected_delete_backend_ids],
+                    any_order = True
+                )
         # fail case
-        else:
+        elif not delete_succeeded:
             assert response_success is False
             mock_delete_backend.assert_awaited()
+
+
+@pytest.mark.parametrize(
+    "exception_expected, filename, backend",
+    test_backends
+)
+@pytest.mark.asyncio
+async def test_convert_backend_temp_to_out(exception_expected, backend):
+    with patch(
+        "app.main.service.backend.get_backend_by_id",
+        return_value = BackendOut.model_construct(file_path = "test_path")
+    ) as mock_get_backend_by_id:
+
+        backend_out: BackendOut = await backend_service.convert_backend_temp_to_out(backend)
+
+
+
+
 
 
 
@@ -357,10 +376,6 @@ async def test_delete_duplicate_backends(delete_succeeded, proxy_pass, expected_
 
 
 """
-@pytest.mark.asyncio
-async def test_convert_backend_temp_to_out():
-    ...
-
 def test_check_backend_path_file():
     ...
 
