@@ -299,7 +299,7 @@ async def set_backend_id_and_suffix(backend: BackendTemp, **kwargs) -> tuple[Bac
 # TODO: handle cases where same proxy_pass exists with and without trailing path (guacamole)
 async def delete_duplicate_backends(backend_with_proxy_pass: BackendIn) -> bool:
     """
-    Checks for duplicates in proxy_pass (namely upstream_url) for a given backend and deletes all of them.
+    Checks for duplicates in proxy_pass (namely upstream_url) for a given BackendIn and deletes all of them.
     Returns only False, if a deletion failed. Returns True if no backends were found and thus deleted.
     """
     # get proxy_pass from provided backend
@@ -314,12 +314,15 @@ async def delete_duplicate_backends(backend_with_proxy_pass: BackendIn) -> bool:
     else:
         for backend in matching_backends:
             logger.info(f"Deleting existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
-            if not delete_backend(backend_id = backend.id):
+            if not await delete_backend(backend_id = backend.id):
                 return False
     return success
 
 
 async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut | None:
+    """
+    Converts a given BackendTemp to BackendOut. Returns None otherwise.
+    """
     # needed for returning backends to client
     try:
         backend_out = BackendOut(
@@ -338,9 +341,11 @@ async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut |
 
 
 def check_backend_path_file() -> bool:
+    """
+    Checks whether a backend path exists, is accessible and has files
+    """
     settings = get_settings()
-    # check if backend path exists, is accessible and has files
-    if not os.path.exists(settings.FORC_BACKEND_PATH) and not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
+    if not os.path.exists(settings.FORC_BACKEND_PATH) or not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
         logger.error("Not able to access configured backend path.")
         return False
     if len(os.listdir(settings.FORC_BACKEND_PATH)) == 0:
@@ -350,17 +355,19 @@ def check_backend_path_file() -> bool:
 
 
 def check_backend_path_file_naming(backend_path_filename: str) -> bool | None:
-    # check for correct naming
-        match = re.fullmatch(filename_regex, backend_path_filename)
-        # skip files with wrong naming and log warning
-        if not match:
-            # exclude expected files from warning
-            if backend_path_filename == "users" or backend_path_filename == "scripts":
-                return None
-            logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
+    """
+    Checks for correct naming of the file in the backend path
+    """
+    match = re.fullmatch(filename_regex, backend_path_filename)
+    # skip files with wrong naming and log warning
+    if not match:
+        # exclude expected files from warning
+        if backend_path_filename == "users" or backend_path_filename == "scripts":
             return None
-        # return backend id of the correctly named file
-        return True
+        logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
+        return None
+    # return backend id of the correctly named file
+    return True
 
 
 def get_backend_path_filenames() -> List[str] | None:

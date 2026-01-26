@@ -144,7 +144,7 @@ class BackendTemp(BackendIn, BackendOut):
     """
     Backend class to temporarily save information. Links BackendIn with BackendOut.
     """
-    id: int = None
+    id: int = None # TODO: also needs refactoring: change type to int and rename to backend_id
     owner: str = None
     location_url: str = None
     template: str = None

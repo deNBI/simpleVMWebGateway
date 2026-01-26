@@ -1,5 +1,8 @@
+import os
 import pytest
 from unittest.mock import call, patch
+from app.main.config import get_settings
+
 
 from app.main.model.serializers import BackendIn, BackendOut, BackendTemp
 
@@ -90,7 +93,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (False,
      BackendTemp.model_construct(
         id = 123,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "dog_100",
         template = "testtemplate",
         template_version = "v01",
@@ -100,13 +103,13 @@ test_backends_for_convert_backend_temp_to_out = [
         file_path = "file_path"
         )),
     (False,
-     BackendOut.model_construct(
+     BackendTemp.model_construct(
         id = 456,
-        owner = "otheruser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "ant_300",
         template = "anothertemplate",
         template_version = "v03",
-        user_key_url = "yourRstudio",
+        user_key_url = "myRstudio",
         upstream_url = "http://1.1.1.1:8002",
         auth_enabled = True,
         file_path = "another_file_path"
@@ -114,7 +117,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (True,
      BackendTemp.model_construct(
         id = None,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "dog_100",
         template = "testtemplate",
         template_version = "v01",
@@ -127,7 +130,7 @@ test_backends_for_convert_backend_temp_to_out = [
      BackendTemp.model_construct(
         id = 123,
         owner = None,
-        location_url = "dog_100",
+        location_url = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         template = "testtemplate",
         template_version = "v01",
         user_key_url = "myRstudio",
@@ -138,7 +141,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (True,
      BackendTemp.model_construct(
         id = 123,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = None,
         template = "testtemplate",
         template_version = "v01",
@@ -150,7 +153,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (True,
      BackendTemp.model_construct(
         id = 123,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "dog_100",
         template = None,
         template_version = "v01",
@@ -162,7 +165,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (True,
      BackendTemp.model_construct(
         id = 123,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "dog_100",
         template = "testtemplate",
         template_version = None,
@@ -174,7 +177,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (True,
      BackendTemp.model_construct(
         id = 123,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "dog_100",
         template = "testtemplate",
         template_version = "v01",
@@ -186,7 +189,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (True,
      BackendTemp.model_construct(
         id = 123,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "dog_100",
         template = "testtemplate",
         template_version = "v01",
@@ -198,7 +201,7 @@ test_backends_for_convert_backend_temp_to_out = [
     (True,
      BackendTemp.model_construct(
         id = 123,
-        owner = "testuser",
+        owner = "4d2e5e17-a378-4df0-ba9e-4fb710f0eeb",
         location_url = "dog_100",
         template = "testtemplate",
         template_version = "v01",
@@ -247,7 +250,7 @@ async def test_generate_suffix_number(exception_expected, expected_suffix, user_
 
 @pytest.mark.parametrize(
     "exception_expected, filename, backend",
-    test_backends
+    test_backends_for_generate_backend_filename
 )
 @pytest.mark.asyncio
 async def test_generate_backend_filename(exception_expected, filename, backend):
@@ -482,11 +485,11 @@ async def test_convert_backend_temp_to_out(exception_expected, backend):
         "app.main.service.backend.get_backend_by_id",
         return_value = BackendOut.model_construct(file_path = backend.file_path)
     ) as mock_get_backend_by_id:
-        try:
+        try: # @reviewer: is there an easier way?
             backend_out = await backend_service.convert_backend_temp_to_out(backend)
             if not exception_expected:
                 assert isinstance(backend_out, BackendOut)
-                mock_get_backend_by_id.assert_once_awaited_with(backend_id = backend.id)
+                mock_get_backend_by_id.assert_awaited_once_with(backend.id)
                 assert backend_out.id == backend.id
                 assert backend_out.owner == backend.owner
                 assert backend_out.location_url == backend.location_url
@@ -499,9 +502,24 @@ async def test_convert_backend_temp_to_out(exception_expected, backend):
                 raise e
 
 
+def test_check_backend_path_file():
+    # fail case - backend file missing
+    assert backend_service.check_backend_path_file() == False
 
+    # success case, create backend file for that
+    settings = get_settings()
+    backend_file_path = str(settings.FORC_BACKEND_PATH) + "/test_backend"
+    backend_file = os.open(backend_file_path, os.O_CREAT)
+    os.close(backend_file)
+    assert backend_service.check_backend_path_file() == True
 
+    # fail case - no (write) access to file, remove access
+    os.chmod(backend_file_path, 0o555)
+    assert backend_service.check_backend_path_file() == False
 
+    # fail case - environment variable missing
+    os.environ.pop("FORC_BACKEND_PATH", None)
+    assert backend_service.check_backend_path_file() == False
 
 
 
@@ -512,11 +530,21 @@ async def test_convert_backend_temp_to_out(exception_expected, backend):
 
 
 """
-def test_check_backend_path_file():
-    ...
-
+@pytest.mark.parametrize(
+        "exception_expected, filename"
+)
 def test_check_backend_path_file_naming():
-    ...
+
+
+
+
+
+
+
+
+
+
+
 
 def test_get_backend_path_filenames():
     ...
