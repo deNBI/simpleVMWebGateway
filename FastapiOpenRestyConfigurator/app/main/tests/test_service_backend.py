@@ -508,19 +508,22 @@ def test_check_backend_path_file():
 
     # success case, create backend file for that
     settings = get_settings()
-    backend_file_path = str(settings.FORC_BACKEND_PATH) + "/test_backend"
+    forc_backend_path = str(settings.FORC_BACKEND_PATH)
+    backend_file_path = forc_backend_path + "/test_backend"
     backend_file = os.open(backend_file_path, os.O_CREAT)
     os.close(backend_file)
     assert backend_service.check_backend_path_file() == True
 
-    # fail case - no (write) access to file, remove access
-    os.chmod(backend_file_path, 0o555)
-    assert backend_service.check_backend_path_file() == False
-
-    # fail case - environment variable missing
+    # fail case - environment variable missing, remove and set again for next test
     os.environ.pop("FORC_BACKEND_PATH", None)
+    get_settings.cache_clear()
     assert backend_service.check_backend_path_file() == False
+    os.environ["FORC_BACKEND_PATH"] = forc_backend_path
+    get_settings.cache_clear()
 
+    # fail case - no (write) access to file, remove access
+    os.chmod(settings.FORC_BACKEND_PATH, 0o555)
+    assert backend_service.check_backend_path_file() == False
 
 
 
