@@ -502,16 +502,21 @@ async def test_convert_backend_temp_to_out(exception_expected, backend):
                 raise e
 
 
+def helper_create_backend_file(filename: str) -> str:
+    settings = get_settings()
+    forc_backend_path = str(settings.FORC_BACKEND_PATH)
+    backend_file_path = forc_backend_path + "/" + filename
+    backend_file = os.open(backend_file_path, os.O_CREAT)
+    os.close(backend_file)
+    return forc_backend_path
+
+# TODO: mock all os functions
 def test_check_backend_path_file():
     # fail case - backend file missing
     assert backend_service.check_backend_path_file() == False
 
     # success case, create backend file for that
-    settings = get_settings()
-    forc_backend_path = str(settings.FORC_BACKEND_PATH)
-    backend_file_path = forc_backend_path + "/test_backend"
-    backend_file = os.open(backend_file_path, os.O_CREAT)
-    os.close(backend_file)
+    forc_backend_path = helper_create_backend_file("test_backend")
     assert backend_service.check_backend_path_file() == True
 
     # fail case - environment variable missing, remove and set again for next test
@@ -522,8 +527,12 @@ def test_check_backend_path_file():
     get_settings.cache_clear()
 
     # fail case - no (write) access to file, remove access
-    os.chmod(settings.FORC_BACKEND_PATH, 0o555)
+#    with patch
+    os.chmod(get_settings().FORC_BACKEND_PATH, 0o555)
+    if backend_service.check_backend_path_file() == True:
+        os.chmod(get_settings().FORC_BACKEND_PATH, 0o755)
     assert backend_service.check_backend_path_file() == False
+
 
 
 @pytest.mark.parametrize(
@@ -546,6 +555,15 @@ def test_check_backend_path_file_naming(expected, filename):
             raise e
 
 
+def test_get_backend_path_filenames():
+    # fail case - no backend files
+    assert backend_service.get_backend_path_filenames() is None
+    # success case, create two backend files
+    helper_create_backend_file("test_backend_1")
+    helper_create_backend_file("test_backend_2")
+    backend_path_filenames = backend_service.get_backend_path_filenames()
+    assert backend_path_filenames
+    assert len(backend_path_filenames) == 2
 
 
 
@@ -565,8 +583,7 @@ def test_check_backend_path_file_naming(expected, filename):
 
 
 """
-def test_get_backend_path_filenames():
-    ...
+
 
 def test_get_valid_backend_filenames():
     ...
