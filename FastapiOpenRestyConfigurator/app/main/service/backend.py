@@ -354,20 +354,20 @@ def check_backend_path_file() -> bool:
     return True
 
 
-def check_backend_path_file_naming(backend_path_filename: str) -> bool | None:
+def check_backend_path_file_naming(backend_path_filename: str) -> bool:
     """
     Checks for correct naming of the file in the backend path
     """
     match = re.fullmatch(filename_regex, backend_path_filename)
     # skip files with wrong naming and log warning
-    if not match:
+    if match:
+        return True
+    else:
         # exclude expected files from warning
         if backend_path_filename == "users" or backend_path_filename == "scripts":
-            return None
-        logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
-        return None
-    # return backend id of the correctly named file
-    return True
+            logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
+            return True
+        return False
 
 
 def get_backend_path_filenames() -> List[str] | None:

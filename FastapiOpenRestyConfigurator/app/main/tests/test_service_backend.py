@@ -8,8 +8,8 @@ from app.main.model.serializers import BackendIn, BackendOut, BackendTemp
 
 from app.main.service import backend as backend_service
 
-file_path_example_1 = "/var/forc/backend_path/1234567890%testuser%animal_100%testtemplate%v01%0.conf"
-file_path_example_2 = "/var/forc/backend_path/9876543210%otheruser%cat_200%othertemplate%v02%1.conf"
+file_path_example_1 = "1234567890%testuser%animal_100%testtemplate%v01%0.conf"
+file_path_example_2 = "9876543210%otheruser%cat_200%othertemplate%v02%1.conf"
 
 # TEST DATA
 
@@ -526,6 +526,38 @@ def test_check_backend_path_file():
     assert backend_service.check_backend_path_file() == False
 
 
+@pytest.mark.parametrize(
+    "expected, filename",
+    [
+        (True, "users"),
+        (True, "scripts"),
+        (True, file_path_example_1),
+        (True, file_path_example_2),
+        (False, "obviously_wrong"),
+        (False, 37)
+    ]
+)
+def test_check_backend_path_file_naming(expected, filename):
+    try:
+        assert backend_service.check_backend_path_file_naming(filename) is expected
+    except TypeError as e:
+        assert not expected
+        if expected:
+            raise e
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -533,22 +565,6 @@ def test_check_backend_path_file():
 
 
 """
-@pytest.mark.parametrize(
-        "exception_expected, filename"
-)
-def test_check_backend_path_file_naming():
-
-
-
-
-
-
-
-
-
-
-
-
 def test_get_backend_path_filenames():
     ...
 
