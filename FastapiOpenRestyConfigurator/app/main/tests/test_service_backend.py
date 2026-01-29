@@ -1,7 +1,5 @@
-import os
 import pytest
 from unittest.mock import call, patch
-from app.main.config import get_settings
 
 
 from app.main.model.serializers import BackendIn, BackendOut, BackendTemp
@@ -502,37 +500,40 @@ async def test_convert_backend_temp_to_out(exception_expected, backend):
                 raise e
 
 
-def helper_create_backend_file(filename: str) -> str:
-    settings = get_settings()
-    forc_backend_path = str(settings.FORC_BACKEND_PATH)
-    backend_file_path = forc_backend_path + "/" + filename
-    backend_file = os.open(backend_file_path, os.O_CREAT)
-    os.close(backend_file)
-    return forc_backend_path
+@pytest.mark.parametrize(
+        "expected, path_exists, access, listdir",
+        [
+            (True, True, True, ["first"]),
+            (True, True, True, ["first", "second"]),
+            (True, True, True, ["first", "second", "third"]),
+            (False, False, False, ["first"]),
+            (False, False, True, ["first"]),
+            (False, True, False, ["first"]),
+            (False, True, True, []),
 
-# TODO: mock all os functions
-def test_check_backend_path_file():
-    # fail case - backend file missing
-    assert backend_service.check_backend_path_file() == False
+        ]
+)
+def test_check_backend_path(expected, path_exists, access, listdir):
 
-    # success case, create backend file for that
-    forc_backend_path = helper_create_backend_file("test_backend")
-    assert backend_service.check_backend_path_file() == True
-
-    # fail case - environment variable missing, remove and set again for next test
-    os.environ.pop("FORC_BACKEND_PATH", None)
-    get_settings.cache_clear()
-    assert backend_service.check_backend_path_file() == False
-    os.environ["FORC_BACKEND_PATH"] = forc_backend_path
-    get_settings.cache_clear()
-
-    # fail case - no (write) access to file, remove access
-#    with patch
-    os.chmod(get_settings().FORC_BACKEND_PATH, 0o555)
-    if backend_service.check_backend_path_file() == True:
-        os.chmod(get_settings().FORC_BACKEND_PATH, 0o755)
-    assert backend_service.check_backend_path_file() == False
-
+    with patch(
+        "app.main.service.backend.get_settings" # imported
+    ) as mock_get_settings, patch(
+        "os.path.exists",
+        return_value = path_exists
+    ) as mock_os_path_exists, patch(
+        "os.access",
+        return_value = access
+    ) as mock_os_access, patch(
+        "os.listdir",
+        return_value = listdir
+    ) as mock_os_listdir:
+        assert backend_service.check_backend_path() == expected
+        mock_get_settings.assert_called_once()
+        mock_os_path_exists.assert_called_once()
+        if path_exists:
+            mock_os_access.assert_called_once()
+            if access:
+                mock_os_listdir.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -546,26 +547,37 @@ def test_check_backend_path_file():
         (False, 37)
     ]
 )
-def test_check_backend_path_file_naming(expected, filename):
+def test_check_backend_file_naming(expected, filename):
     try:
-        assert backend_service.check_backend_path_file_naming(filename) is expected
+        assert backend_service.check_backend_file_naming(filename) is expected
     except TypeError as e:
         assert not expected
         if expected:
             raise e
 
+@pytest.mark.parametrize(
+    "returning, backend_check",
+    [
+        (["something"], True),
+        (None, False)
+    ]
+)
+def test_get_backend_path_filenames(returning, backend_check):
 
-def test_get_backend_path_filenames():
-    # fail case - no backend files
-    assert backend_service.get_backend_path_filenames() is None
-    # success case, create two backend files
-    helper_create_backend_file("test_backend_1")
-    helper_create_backend_file("test_backend_2")
-    backend_path_filenames = backend_service.get_backend_path_filenames()
-    assert backend_path_filenames
-    assert len(backend_path_filenames) == 2
-
-
+    with patch(
+        "app.main.service.backend.get_settings" # imported
+    ) as mock_get_settings, patch(
+        "app.main.service.backend.check_backend_path",
+        return_value = backend_check
+    ) as mock_check_backend_path, patch(
+        "os.listdir",
+        return_value = returning
+    ) as mock_os_listdir:
+        assert backend_service.get_backend_path_filenames() == returning
+        mock_check_backend_path.assert_called_once()
+        if backend_check:
+            mock_os_listdir.assert_called_once()
+            mock_get_settings.assert_called_once()
 
 
 

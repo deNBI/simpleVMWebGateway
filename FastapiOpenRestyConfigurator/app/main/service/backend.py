@@ -340,21 +340,21 @@ async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut |
         return None
 
 
-def check_backend_path_file() -> bool:
+def check_backend_path() -> bool:
     """
     Checks whether a backend path exists, is accessible and has files
     """
-    settings = get_settings()
-    if not os.path.exists(settings.FORC_BACKEND_PATH) or not os.access(settings.FORC_BACKEND_PATH, os.W_OK):
+    forc_backend_path = get_settings().FORC_BACKEND_PATH
+    if not os.path.exists(forc_backend_path) or not os.access(forc_backend_path, os.W_OK):
         logger.error("Not able to access configured backend path.")
         return False
-    if len(os.listdir(settings.FORC_BACKEND_PATH)) == 0:
+    if len(os.listdir(forc_backend_path)) == 0:
         logger.error("No files found in backend path.")
         return False
     return True
 
 
-def check_backend_path_file_naming(backend_path_filename: str) -> bool:
+def check_backend_file_naming(backend_path_filename: str) -> bool:
     """
     Checks for correct naming of the file in the backend path
     """
@@ -371,15 +371,19 @@ def check_backend_path_file_naming(backend_path_filename: str) -> bool:
 
 
 def get_backend_path_filenames() -> List[str] | None:
-    settings = get_settings()
-    # get list of filenames in backend path
-    if not check_backend_path_file():
+    """
+    Returns a list of all the filenames in the backend path, or None if failed.
+    """
+    if not check_backend_path():
         return None
 
-    return os.listdir(settings.FORC_BACKEND_PATH)
+    return os.listdir(get_settings().FORC_BACKEND_PATH)
 
 
 def get_valid_backend_filenames() -> List[str] | None:
+    """
+    Returns a list of all valid filenames in the backend path, or None if failed.
+    """
 
     # get list of valid backend filenames in backend path
     backend_path_filenames = get_backend_path_filenames()
@@ -389,7 +393,7 @@ def get_valid_backend_filenames() -> List[str] | None:
     # check naming, skip invalid filenames
     valid_backend_filenames = []
     for filename in backend_path_filenames:
-        if not check_backend_path_file_naming(filename):
+        if not check_backend_file_naming(filename):
             continue
 
     # add valid filenames to list and return them
