@@ -266,7 +266,9 @@ async def test_generate_backend_filename(exception_expected, filename, backend):
 
 # CORE GETTER FUNCTIONS
 
-# TODO: async def test_get_backends():
+"""
+async def test_get_backends():
+"""
 
 
 @pytest.mark.parametrize(

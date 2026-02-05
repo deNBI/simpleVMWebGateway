@@ -33,21 +33,19 @@ def random_with_n_digits(n):
 
 
 # TODO: unlikely but potential error cause, if two users have same randomly generated user_key_url!
-async def generate_suffix_number(user_key_url: str | None = None) -> int:
-    if user_key_url is None:
+async def generate_suffix_number(location_url: str | None = None) -> int:
+    if location_url is None:
         return 100
-
     # extract current suffix number, check validity
-    current_suffix_number: int = int(user_key_url.split("_")[1])
+    current_suffix_number: int = int(location_url.split("_")[1])
     if current_suffix_number < 100 or current_suffix_number > 999:
-        logger.error("Invalid user_key_url provided for suffix generation: " + user_key_url)
+        logger.error("Invalid user_key_url provided for suffix generation: " + location_url)
         raise InternalServerError("Invalid user_key_url provided for suffix generation.")
-
     # look for backends with same user_key_url
     backends: List[BackendOut] = await get_backends()
     same_name_backend_suffixes: List[int] = []
     for backend in backends:
-        if backend.location_url == user_key_url:
+        if backend.location_url == location_url:
             suffix: int = int(backend.location_url.split("_")[1])
             same_name_backend_suffixes.append(suffix)
     if not same_name_backend_suffixes:
@@ -57,7 +55,7 @@ async def generate_suffix_number(user_key_url: str | None = None) -> int:
     same_name_backend_suffixes.sort()
     highest_id: int = same_name_backend_suffixes[-1]
     if highest_id == 999:
-        logger.warning("Reached max index number for requested user_key_url: " + user_key_url)
+        logger.warning("Reached max index number for requested user_key_url: " + location_url)
         raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
     return highest_id + 1
 
@@ -292,7 +290,7 @@ async def set_backend_id_and_suffix(backend: BackendTemp, **kwargs) -> tuple[Bac
             logger.warning(f"set_backend_id_and_suffix() received unexpected kwargs: {kwargs}")
             raise InternalServerError("Unexpected kwargs provided to set_backend_id_and_suffix().") # @reviewer: should we really error here?
         backend = backend.model_copy(update={'id': str(random_with_n_digits(10))})
-        suffix_number = await generate_suffix_number(backend.user_key_url)
+        suffix_number = await generate_suffix_number(backend.location_url)
     return backend, suffix_number
 
 
