@@ -98,7 +98,6 @@ async def get_backends() -> List[BackendOut]:
             auth_enabled = bool(int(match.group(6))),
             file_path = os.path.join(settings.FORC_BACKEND_PATH, filename)
         )
-        logger.debug(f"Discovered backend: {backend}")
         valid_backends.append(backend)
     return valid_backends
 
@@ -252,7 +251,6 @@ async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> B
 
     # generate new backend contents with temp_payload, additional kwargs to persist backend_id and location_url
     new_contents = await create_backend(temp_payload, id=str(backend_id), location_url=backend.location_url)
-    logger.debug(f"New contents: {new_contents}") 
     if not new_contents:
         logger.error("Templating returned empty result.")
         return None
@@ -363,8 +361,8 @@ def check_backend_file_naming(backend_path_filename: str) -> bool:
     else:
         # exclude expected files from warning
         if backend_path_filename == "users" or backend_path_filename == "scripts":
-            logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
             return True
+        logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
         return False
 
 
