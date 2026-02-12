@@ -29,19 +29,21 @@ This is an example Template for the research environment [RStudio](https://rstud
     location /{{ key_url }}/ {
             # Run this lua block, which checks if we are authenticated (again) und filters request by JWT (via id_token.sub)
             access_by_lua_block {
-                    -- Start actual openid authentication procedure
-                    local res, err = require("resty.openidc").authenticate(opts2)
-                    -- If it fails for some reason, escape via HTTP 500
-                    if err then
-                            ngx.status = 500
-                            ngx.say(err)
-                            ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
-                    end
+                -- Start actual openid authentication procedure
+                local res, err = require("resty.openidc").authenticate(opts2)
+                -- If it fails for some reason, escape via HTTP 500
+                if err then
+                        ngx.status = 500
+                        ngx.say(err)
+                        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+                end
 
-                    -- Protect this location and allow only one specific ELIXIR User
-                    if res.id_token.sub ~= "{{ owner }}" then
-                            ngx.exit(ngx.HTTP_FORBIDDEN)
-                    end
+                -- Protect this location and allow only one specific ELIXIR User
+                {% if only_allow_owner %}
+                        if (res.id_token.sub ~= "{{ owner }}" and not user_service.file_exists(ngx.var.user_path .. res.id_token.sub)) then
+                                ngx.exit(ngx.HTTP_FORBIDDEN)
+                        end
+                {% endif %}
             }
 
 
