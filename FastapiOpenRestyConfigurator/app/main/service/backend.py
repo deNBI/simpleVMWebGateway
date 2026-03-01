@@ -181,6 +181,7 @@ def get_basekey_from_backend(backend: BackendOut) ->  str | None:
 # CORE MUTATOR AND SERVICE FUNCTIONS
 
 async def create_backend(payload_input: BackendIn, **kwargs) -> BackendTemp:
+    logger.info(f"Attempting to create backend with user_key_url: {payload_input.user_key_url}")
     settings = get_settings()
 
     # overwrite payload as BackendTemp for generate_backend_by_template()
@@ -205,6 +206,7 @@ async def create_backend(payload_input: BackendIn, **kwargs) -> BackendTemp:
 
     with open(f"{settings.FORC_BACKEND_PATH}/{filename}", 'w') as backend_file:
         backend_file.write(backend_file_contents)
+        backend_file.close()
 
     # attempt to reload openresty
     await reload_openresty()
@@ -215,16 +217,21 @@ async def delete_backend(backend_id) -> bool:
     settings = get_settings()
     backend_path_filenames = get_valid_backend_filenames()
     if not backend_path_filenames:
-        return False
+        logger.error(f"Backend {backend_id} was not found.")
+        raise NotFound(f"Backend {backend_id} was not found.")
 
     matching_backend_filenames = filter_backend_filenames_by_id(backend_path_filenames, backend_id)
 
     amount_of_files = len(matching_backend_filenames)
     if amount_of_files == 0:
+        logger.error(f"Backend {backend_id} was not found")
         raise NotFound(f"Backend {backend_id} was not found.")
     if amount_of_files > 1:
         logger.error(f"Found multiple backend files for backend id: {backend_id}, cannot delete.")
-        raise InternalServerError("Server found multiple backend files, cannot delete.")
+        raise InternalServerError("Found multiple backend files for backend id: {backend_id}, cannot delete.")
+    if not amount_of_files == 1:
+        logger.error(f"Something went wrong. Did not expect multiple files for deletion. Backend id: {backend_id}")
+        raise InternalServerError(f"Something went wrong. Did not expect multiple files for deletion. Backend id: {backend_id}")
 
     filename = matching_backend_filenames[0]
 
@@ -303,16 +310,18 @@ async def delete_duplicate_backends(backend_with_proxy_pass: BackendIn) -> bool:
     # get all backends linked to the given proxy_pass
     backends_proxy_passes: Dict[str, List[BackendOut]] = await get_backends_proxy_pass()
     matching_backends: List[BackendOut] = backends_proxy_passes.get(proxy_pass, [])
+    logger.info(f"Matching backends: {matching_backends}")
     # delete all matching backends
-    success: bool = True
     if len(matching_backends) == 0:
-        logger.warning("No backends found for matching, proxy_pass: " + str(proxy_pass))
+        logger.warning("No matching backends found with proxy_pass: " + str(proxy_pass))
     else:
         for backend in matching_backends:
-            logger.info(f"Deleting existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
-            if not await delete_backend(backend_id = backend.id):
+            if await delete_backend(backend_id = backend.id):
+                logger.info(f"Deleted existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
+            else:
+                logger.error(f"Failed to delete existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
                 return False
-    return success
+    return True
 
 
 async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut | None:
@@ -360,9 +369,8 @@ def check_backend_file_naming(backend_path_filename: str) -> bool:
         return True
     else:
         # exclude expected files from warning
-        if backend_path_filename == "users" or backend_path_filename == "scripts":
-            return True
-        logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
+        if not backend_path_filename == "users" and not backend_path_filename == "scripts":
+            logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
         return False
 
 
@@ -386,24 +394,28 @@ def get_valid_backend_filenames() -> List[str] | None:
     if not backend_path_filenames:
         return None
 
-    # check naming, skip invalid filenames
     valid_backend_filenames = []
     for filename in backend_path_filenames:
+        # check naming, skip invalid filenames
         if not check_backend_file_naming(filename):
             continue
 
-    # add valid filenames to list and return them
+        # add valid filenames to list and return them
         valid_backend_filenames.append(filename)
     return valid_backend_filenames
 
 
 def filter_backend_filenames_by_id(backend_path_filenames: List[str], backend_id: int) -> List[str]:
-    # filter a list of backend filenames for matching backend id
+    """
+    Filters and returns a list of backend filenames for matching backend ids. Provided filenames must be checked for correct naming separately before.
+    """
     return [filename for filename in backend_path_filenames if int(filename.split("%")[0]) == int(backend_id)]
 
 
 def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> BackendIn | None:
-    # fetch necessary info from existing BackendOut and build BackendIn payload for create_backend(), see update_backend_authorization()
+    """
+    Build BackendIn payload by fetching required information from existing BackendOut. For backend_service.create_backend(), see update_backend_authorization().
+    """
     upstream_url = get_upstream_url(backend.file_path)
     base_key = get_basekey_from_backend(backend)
     if not upstream_url or not base_key:
