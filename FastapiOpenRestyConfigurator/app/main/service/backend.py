@@ -80,14 +80,14 @@ async def get_backends() -> List[BackendOut]:
     if len(os.listdir(settings.FORC_BACKEND_PATH)) == 0:
         return []
     backend_path_filenames = os.listdir(settings.FORC_BACKEND_PATH)
-    logger.info(f"Files in backend_path: {backend_path_filenames}")
+    logger.debug(f"Files in backend_path: {backend_path_filenames}")
     valid_backends = []
     for filename in backend_path_filenames:
         match = re.fullmatch(filename_regex, filename)
         if not match:
             if filename == "users" or filename == "scripts":
                 continue
-            logger.warning("Found a backend file with wrong naming, skipping it: " + str(filename))
+            logger.debug("Found a backend file with wrong naming, skipping it: " + str(filename))
             continue
         backend: BackendOut = BackendOut(
             id = int(match.group(1)),
