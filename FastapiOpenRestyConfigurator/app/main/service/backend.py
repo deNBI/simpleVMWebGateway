@@ -222,14 +222,14 @@ async def delete_backend(backend_id) -> bool:
 
     matching_backend_filenames = filter_backend_filenames_by_id(backend_path_filenames, backend_id)
 
-    amount_of_files = len(matching_backend_filenames)
-    if amount_of_files == 0:
+    number_of_files = len(matching_backend_filenames)
+    if number_of_files == 0:
         logger.error(f"Backend {backend_id} was not found")
         raise NotFound(f"Backend {backend_id} was not found.")
-    if amount_of_files > 1:
+    if number_of_files > 1:
         logger.error(f"Found multiple backend files for backend id: {backend_id}, cannot delete.")
         raise InternalServerError("Found multiple backend files for backend id: {backend_id}, cannot delete.")
-    if not amount_of_files == 1:
+    if not number_of_files == 1: # fallback
         logger.error(f"Something went wrong. Did not expect multiple files for deletion. Backend id: {backend_id}")
         raise InternalServerError(f"Something went wrong. Did not expect multiple files for deletion. Backend id: {backend_id}")
 
@@ -246,15 +246,16 @@ async def delete_backend(backend_id) -> bool:
         raise InternalServerError("Server was not able to delete this backend. Contact the admin.")
 
 
-async def update_backend_authorization(backend_id: int, auth_enabled: bool) -> BackendOut | None:
+async def update_backend_authorization(backend_id: int, auth_enable: bool) -> BackendOut | None:
+    # get existing BackendOut by id to fetch necessary information for payload building and filename generation
     backend = await get_backend_by_id(backend_id)
     if not backend:
         return None
 
     # build temporary payload as BackendIn for create_backend()
-    temp_payload = build_payload_for_auth_update(backend, auth_enabled)
+    temp_payload = build_payload_for_auth_update(backend, auth_enable)
     if not temp_payload:
-        return None    
+        return None
 
     # generate new backend contents with temp_payload, additional kwargs to persist backend_id and location_url
     new_contents = await create_backend(temp_payload, id=str(backend_id), location_url=backend.location_url)

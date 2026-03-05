@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import call, patch
 
+from werkzeug.exceptions import NotFound, InternalServerError
 
 from app.main.model.serializers import BackendIn, BackendOut, BackendTemp
 
@@ -409,22 +410,87 @@ async def test_create_backend(backend_file_contents, delete_duplicate_backends):
             assert not backend_file_contents or not delete_duplicate_backends
 
 
-
-
-
-
-
-
-
-"""
+@pytest.mark.parametrize(
+    "exception_expected, backend_path_filenames, matching_backend_filenames",
+    [
+        (False, [file_path_example_1, file_path_example_2], [file_path_example_1]),
+        (False, [file_path_example_1, file_path_example_2], [file_path_example_2]),
+        (True, [file_path_example_1, file_path_example_2], []),
+        (True, [], []),
+        (True, [file_path_example_2], [])
+    ]
+)
 @pytest.mark.asyncio
-async def test_delete_backend():
-    ...
+async def test_delete_backend(exception_expected, backend_path_filenames, matching_backend_filenames):
+    with patch(
+        "app.main.config.get_settings"
+    ) as mock_get_settings, patch(
+        "app.main.service.backend.get_valid_backend_filenames",
+        return_value = backend_path_filenames
+    ) as mock_get_valid_backend_filenames, patch(
+        "app.main.service.backend.filter_backend_filenames_by_id",
+        return_value = matching_backend_filenames
+    ) as mock_filter_backend_filenames_by_id, patch(
+        "os.remove"
+    ) as mock_os_remove, patch(
+        "app.main.service.backend.reload_openresty"
+    ) as mock_reload_openresty:
 
+        try:
+            number_of_files = len(matching_backend_filenames)
+            result = await backend_service.delete_backend(0) # backend_id irrelevant due to mocks
+            # mock_get_settings.assert_called_once()
+            mock_get_valid_backend_filenames.assert_called_once()
+            mock_filter_backend_filenames_by_id.assert_called_once()
+            mock_os_remove.assert_called_once()
+            mock_reload_openresty.assert_awaited_once()
+            assert result is True
+        except NotFound as e:
+            assert exception_expected and (not backend_path_filenames or number_of_files == 0)
+        except InternalServerError as e:
+            assert exception_expected and backend_path_filenames and number_of_files != 1
+        except OSError as e:
+            assert exception_expected and (not backend_path_filenames or number_of_files == 0)
+        except Exception as e:
+            raise e
+
+
+@pytest.mark.parametrize(
+    "exception_expected, auth_enable, get_backend, temp_payload, new_contents, returning_backend",
+    [
+        (False, True, True, True, True, True),
+        (False, False, True, True, True, True),
+        (True, True, False, True, True, True),
+        (True, True, True, False, True, True),
+        (True, True, True, True, False, True),
+        (True, True, True, True, True, False)
+    ]
+)
 @pytest.mark.asyncio
-async def test_update_backend_authorization():
-    ...
-"""
+async def test_update_backend_authorization(exception_expected, auth_enable, get_backend, temp_payload, new_contents, returning_backend):
+    with patch(
+        "app.main.service.backend.get_backend_by_id",
+        return_value = BackendOut.model_construct(location_url="test_100") if get_backend else None
+    ) as mock_get_backend_by_id, patch(
+        "app.main.service.backend.build_payload_for_auth_update",
+        return_value = BackendIn.model_construct() if temp_payload else None
+    ) as mock_build_payload_for_auth_update, patch(
+        "app.main.service.backend.create_backend",
+        return_value = BackendTemp.model_construct() if new_contents else None
+    ) as mock_create_backend, patch(
+        "app.main.service.backend.convert_backend_temp_to_out",
+        return_value = BackendOut.model_construct() if returning_backend else None
+    ) as mock_convert_backend_temp_to_out:
+
+        result = await backend_service.update_backend_authorization(0, auth_enable) # backend_id irrelevant due to mocks
+        if not exception_expected:
+            mock_get_backend_by_id.assert_awaited_once_with(0)
+            mock_build_payload_for_auth_update.assert_called_once_with(mock_get_backend_by_id.return_value, auth_enable)
+            mock_create_backend.assert_awaited_once_with(mock_build_payload_for_auth_update.return_value, id='0', location_url='test_100')
+            mock_convert_backend_temp_to_out.assert_awaited_once_with(mock_create_backend.return_value)
+            assert result == mock_convert_backend_temp_to_out.return_value
+        else:
+            assert result is None
 
 
 
@@ -686,16 +752,16 @@ def test_filter_backend_filenames_by_id(backend_id, filenames, expected):
 
 
 @pytest.mark.parametrize(
-    "upstream_url, base_key, auth_enabled, exception_expected",
+    "exception_expected, upstream_url, base_key, auth_enabled",
     [
-        ("http://192.168.0.1:8787/guacamole/", "olddragon", True, False),
-        ("http://192.168.0.1:4000/guacamole/", "youngmonkey", False, False),
-        (None, "crazydog", True, False),
-        ("http://192.168.0.1:1000/", None, False, False),
-        ("http://192.168.0.1:1234/", "test_100", None, True)
+        (False, "http://192.168.0.1:8787/guacamole/", "olddragon", True),
+        (False, "http://192.168.0.1:4000/guacamole/", "youngmonkey", False),
+        (True, None, "crazydog", True),
+        (True, "http://192.168.0.1:1000/", None, False),
+        (True, "http://192.168.0.1:1234/", "test_100", None)
     ]
 )
-def test_build_payload_for_auth_update(upstream_url, base_key, auth_enabled, exception_expected):
+def test_build_payload_for_auth_update(exception_expected, upstream_url, base_key, auth_enabled):
     with patch(
         "app.main.service.backend.get_upstream_url",
         return_value = upstream_url
