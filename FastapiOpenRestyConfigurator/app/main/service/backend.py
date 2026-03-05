@@ -371,7 +371,7 @@ def check_backend_file_naming(backend_path_filename: str) -> bool:
     else:
         # exclude expected files from warning
         if not backend_path_filename == "users" and not backend_path_filename == "scripts":
-            logger.warning(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
+            logger.debug(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
         return False
 
 
