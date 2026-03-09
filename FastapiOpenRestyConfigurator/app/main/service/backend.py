@@ -61,7 +61,7 @@ async def get_highest_suffix_number(location_url: str) -> int:
         if backend.location_url == location_url:
             suffix: int = int(backend.location_url.split("_")[1])
             same_name_backend_suffixes.append(suffix)
-    if not same_name_backend_suffixes:
+    if len(same_name_backend_suffixes) == 0:
         return 100
 
     # return highest found suffix number + 1 to iterate

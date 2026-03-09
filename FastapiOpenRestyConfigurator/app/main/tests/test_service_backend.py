@@ -230,9 +230,9 @@ test_backends_for_convert_backend_temp_to_out = [
 async def test_generate_suffix_number(exception_expected, expected_suffix, user_key_url):
 
     with patch(
-        "app.main.service.backend.get_backends",
-        return_value = [BackendOut.model_construct(location_url = user_key_url), BackendOut.model_construct(location_url = "animal_100")]
-    ) as mock_get_backends:
+        "app.main.service.backend.get_highest_suffix_number",
+        return_value = (expected_suffix - 1) if expected_suffix else None
+    ) as mock_get_highest_suffix_number:
 
         try:
             response_suffix: int = await backend_service.generate_suffix_number(user_key_url)
@@ -240,11 +240,34 @@ async def test_generate_suffix_number(exception_expected, expected_suffix, user_
             if not exception_expected:
                 assert response_suffix == expected_suffix
                 if user_key_url is not None:
-                    mock_get_backends.assert_awaited_once()
+                    mock_get_highest_suffix_number.assert_awaited_once()
         # fail case
         except Exception as e:
             if not exception_expected:
                 raise e
+
+
+@pytest.mark.parametrize(
+    "expected_suffix, user_key_url, backends",
+    [
+        (100, "unusual_123", []),
+        (123, "test_123", [BackendOut.model_construct(location_url = "test_123"), BackendOut.model_construct(location_url = "animal_100")]),
+        (250, "test_250", [BackendOut.model_construct(location_url = "test_250"), BackendOut.model_construct(location_url = "animal_100")]),
+        (499, "test_499", [BackendOut.model_construct(location_url = "test_499"), BackendOut.model_construct(location_url = "animal_100")])
+    ]
+)
+@pytest.mark.asyncio
+async def test_get_highest_suffix_number(expected_suffix, user_key_url, backends):
+
+    with patch(
+        "app.main.service.backend.get_backends",
+        return_value = backends
+    ) as mock_get_backends:
+        
+        highest_id = await backend_service.get_highest_suffix_number(user_key_url)
+        mock_get_backends.assert_awaited_once()
+        assert highest_id == expected_suffix
+
 
 
 @pytest.mark.parametrize(
@@ -499,7 +522,7 @@ async def test_update_backend_authorization(exception_expected, auth_enable, get
 @pytest.mark.parametrize(
     "exception_expected, kwargs",
     [
-        # SUCESS CASES
+        # SUCCESS CASES
         (False, {}),
         (False, {"id": 123, "location_url": "test_200"}),
         # FAIL CASES
