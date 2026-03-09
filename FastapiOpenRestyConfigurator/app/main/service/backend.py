@@ -41,7 +41,20 @@ async def generate_suffix_number(location_url: str | None = None) -> int:
     if current_suffix_number < 100 or current_suffix_number > 999:
         logger.error("Invalid user_key_url provided for suffix generation: " + location_url)
         raise InternalServerError("Invalid user_key_url provided for suffix generation.")
-    # look for backends with same user_key_url
+
+    # determine suffix number
+    highest_id = await get_highest_suffix_number(location_url)
+
+    if highest_id == 999:
+        logger.warning("Reached max index number for requested user_key_url: " + location_url)
+        raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
+    return highest_id + 1
+
+async def get_highest_suffix_number(location_url: str) -> int:
+    """
+    Looks for backends with same user_key_url and returns the highest suffix number. See generate_suffix_number().
+    """
+    # look for backends with same user_key_url and extract suffix numbers, if they exist
     backends: List[BackendOut] = await get_backends()
     same_name_backend_suffixes: List[int] = []
     for backend in backends:
@@ -54,10 +67,7 @@ async def generate_suffix_number(location_url: str | None = None) -> int:
     # return highest found suffix number + 1 to iterate
     same_name_backend_suffixes.sort()
     highest_id: int = same_name_backend_suffixes[-1]
-    if highest_id == 999:
-        logger.warning("Reached max index number for requested user_key_url: " + location_url)
-        raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
-    return highest_id + 1
+    return highest_id
 
 
 def generate_backend_filename(backend: BackendOut) -> str:
@@ -105,7 +115,7 @@ async def get_backends() -> List[BackendOut]:
 async def get_backend_by_id(backend_id: int) -> BackendOut:
     valid_backends: List[BackendOut] = await get_backends()
     for backend in valid_backends:
-        if int(backend.id) == int(backend_id): # @reviewer: are we sure that there is only one backend with this backend_id?
+        if int(backend.id) == int(backend_id):
             return backend
     raise NotFound(f"Backend with id {backend_id} was not found.")
 

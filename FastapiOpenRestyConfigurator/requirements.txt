@@ -8,4 +8,4 @@ pydantic-settings
 factory-boy==3.3.3
 # testing
 pytest==8.4.2
-pytest-asyncio # TODO: @reviewer: which version?
+pytest-asyncio==1.3.0

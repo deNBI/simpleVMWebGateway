@@ -39,11 +39,8 @@ async def list_backends(api_key: APIKey = Depends(get_api_key)):
     summary="Create a new backend."
 )
 async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_api_key)):
-    logger.info("111")
     if backend_in:
-        logger.info("112")
         backend = await backend_service.create_backend(backend_in)
-        logger.info(f"113 {backend_in.model_dump()}")
         return backend
     else:
         raise HTTPException(status_code=400)
@@ -57,8 +54,10 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
 )
 async def backend_update_auth(backend_id: int, body: dict = Body(...), api_key: APIKey = Depends(get_api_key)):
     # process inputs TODO: should we validate further?
+    logger.debug(f"Received request to update backend authorization with backend_id: {backend_id} and body: {body}")
     backend_id = int(secure_filename(str(backend_id))) # TODO: are secure_filename and str necessary? validation?
-    assert backend_id is not None, "backend_id is required" # @reviewer: is this okay?
+    if backend_id is None:
+        raise HTTPException(status_code=400, detail="backend_id is required")
     enable_auth = bool(body.get("auth_enabled", None))
     logger.debug(f"Attempting to update backend authorization to {enable_auth} for backend id: {backend_id}")
 
@@ -109,7 +108,8 @@ async def get_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)):
 async def delete_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)):
     try:
         backend_id = int(secure_filename(str(backend_id)))
-        assert backend_id is not None, "backend_id is required" # @reviewer: is this okay?
+        if backend_id is None:
+            raise HTTPException(status_code=400, detail="backend_id is required")
         await backend_service.delete_backend(backend_id)
         await user_service.delete_all(backend_id)
     except NotFound:
