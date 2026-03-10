@@ -99,13 +99,14 @@ async def get_backends() -> List[BackendOut]:
                 continue
             logger.debug("Found a backend file with wrong naming, skipping it: " + str(filename))
             continue
+
         backend: BackendOut = BackendOut(
             id = int(match.group(1)),
             owner = match.group(2),
             location_url = match.group(3),
             template = match.group(4),
             template_version = match.group(5),
-            auth_enabled = bool(int(match.group(6))),
+            auth_enabled = bool(int(match.group(6))) if match.group(6) else True,
             file_path = os.path.join(settings.FORC_BACKEND_PATH, filename)
         )
         valid_backends.append(backend)
