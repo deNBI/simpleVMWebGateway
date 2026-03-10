@@ -19,7 +19,7 @@ logger = logging.getLogger("service")
 
 # format of filename saves information of BackendOut by this schema:
 # {id}%{owner}%{location_url}%{template}%{template_version}%{auth_enabled}.conf
-filename_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)%([01])\.conf"
+filename_regex = r"(\d*)%([a-z0-9\-\@.]*?)%([^%]*)%([^%]*)%([^%]*)(%([01]))?\.conf"
 
 
 
