@@ -28,8 +28,10 @@ tags_metadata = [
 
 owner_regex = r'^[a-zA-Z0-9@.-]{30,}$'
 user_key_url_regex = r"^[a-zA-Z0-9_-]{3,25}$"
-upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})$"
+upstream_url_regex = r"^(https?)://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})(/[a-zA-Z0-9_-]+/)?$"
 
+
+# TODO: needs refactoring to comply with python 3.10 and pydantic v2
 
 class BackendBase(BaseModel):
     """
@@ -52,6 +54,12 @@ class BackendBase(BaseModel):
         title="Template version",
         description="Version of the template the backend refers to.",
         example="v04"
+    )
+    auth_enabled: bool = Field(
+        True,
+        title="Authorization for the research environment",
+        description="If set to true, only the owner of the backend is allowed to access it.",
+        example=False
     )
 
     @validator("owner")
@@ -82,7 +90,7 @@ class BackendIn(BackendBase):
         ...,
         title="Upstream URL",
         description="Inject the full url (with protocol) for the real location of the backend service in the template.",
-        example="http://192.168.0.1:8787/"
+        example="http://192.168.0.1:8787/guacamole/"
     )
 
     @validator("user_key_url")
@@ -113,7 +121,7 @@ class BackendOut(BackendBase):
     """
     Backend class which holds information needed when returning a backend.
     """
-    id: int = Field(
+    id: int = Field( # TODO: needs refactoring: change type to int and rename to backend_id
         ...,
         title="ID",
         description="ID of the backend.",
@@ -136,13 +144,15 @@ class BackendTemp(BackendIn, BackendOut):
     """
     Backend class to temporarily save information. Links BackendIn with BackendOut.
     """
-    id: int = None
+    id: int = None # TODO: also needs refactoring: change type to int and rename to backend_id
     owner: str = None
     location_url: str = None
     template: str = None
     template_version: str = None
     user_key_url: str = None
     upstream_url: str = None
+    auth_enabled: bool = None
+    file_path: str = None
 
 
 class Template(BaseModel):
