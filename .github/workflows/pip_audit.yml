@@ -1,0 +1,24 @@
+name: pip-audit
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, review_requested, ready_for_review]
+  workflow_dispatch:
+
+jobs:
+  pip-audit:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.14
+
+      - uses: pypa/gh-action-pip-audit@v1.1.0
+        with:
+          inputs: FastapiOpenRestyConfigurator/requirements.txt
