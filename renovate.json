@@ -1,33 +1,43 @@
 {
   "extends": [
-    "config:base",
+    "config:recommended",
   ],
 	 "packageRules": [
     {
-      "updateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "addLabels": ["major"]
     },
     {
-      "updateTypes": ["minor"],
+      "matchUpdateTypes": [
+        "minor"
+      ],
       "addLabels": ["minor"]
     },
      {
-      "updateTypes": ["patch"],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "addLabels": ["patch"]
     },
     {
-      "updateTypes": ["pin"],
+      "matchUpdateTypes": [
+        "pin"
+      ],
       "addLabels": ["pin"]
     }
    ],
   "osvVulnerabilityAlerts": true,
-  "baseBranches": ["dev"],
+  "baseBranchPatterns": [
+    "dev"
+  ],
   "reviewers": ["team:portal-dev"],
   "labels": ["dependencies"],
   "assignees": ["team:portal-dev"],
   "branchPrefix": "deps/",
   "bumpVersion": "minor",
   "rebaseWhen": "behind-base-branch",	
-  "commitBodyTable": "true",
+  "commitBodyTable": true,
   "commitMessagePrefix": "feat(Dependencies):"
 }
