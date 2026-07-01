@@ -32,6 +32,11 @@
   "baseBranchPatterns": [
     "dev"
   ],
+  "vulnerabilityAlerts": {
+    "labels": [
+      "security"
+    ]
+  },
   "reviewers": ["team:portal-dev"],
   "labels": ["dependencies"],
   "assignees": ["team:portal-dev"],
