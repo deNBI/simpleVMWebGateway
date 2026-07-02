@@ -7,5 +7,5 @@ gunicorn==26.0.0
 pydantic-settings
 factory-boy==3.3.3
 # testing
-pytest==9.0.3
+pytest==9.1.1
 pytest-asyncio==1.4.0
