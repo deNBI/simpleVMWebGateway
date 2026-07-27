@@ -27,7 +27,7 @@ RUN wget -qO- https://openresty.org/package/pubkey.gpg \
     && apt-get install -y openresty \
     && rm -rf /var/lib/apt/lists/*
 RUN opm install zmartzone/lua-resty-openidc
-RUN opm get bungle/lua-resty-session 3.10
+RUN opm get bungle/lua-resty-session 
 RUN mkdir -p /opt/simpleVMWebGateway
 
 RUN git clone \
