@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-venv \
     lsb-release \
+    luarocks \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OpenResty
@@ -27,16 +28,8 @@ RUN wget -qO- https://openresty.org/package/pubkey.gpg \
     && apt-get install -y openresty \
     && rm -rf /var/lib/apt/lists/*
 
-# Install OIDC
-RUN git clone --depth 1 --branch v1.9.0 \
-    https://github.com/zmartzone/lua-resty-openidc.git /tmp/lua-resty-openidc \
-    && cp -r /tmp/lua-resty-openidc/lib/resty/* \
-       /usr/local/openresty/lualib/resty/ \
-    && rm -rf /tmp/lua-resty-openidc
 
-# Install session
-RUN opm install bungle/lua-resty-session
-
+RUN    luarocks --lua-version=5.1 install lua-resty-openidc && luarocks --lua-version=5.1 install lua-resty-session 
 RUN git clone \
     https://github.com/deNBI/simpleVMWebGateway.git \
     /opt/simpleVMWebGateway/
