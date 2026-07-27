@@ -26,8 +26,15 @@ RUN wget -qO- https://openresty.org/package/pubkey.gpg \
     && apt-get update \
     && apt-get install -y openresty \
     && rm -rf /var/lib/apt/lists/*
-RUN opm install zmartzone/lua-resty-openidc
-RUN opm get bungle/lua-resty-session 
+
+# Install OIDC + session
+RUN git clone --depth 1 --branch v1.9.0 \
+    https://github.com/zmartzone/lua-resty-openidc.git /tmp/lua-resty-openidc \
+    && cp /tmp/lua-resty-openidc/lib/resty/openidc.lua \
+       /usr/local/openresty/site/lualib/resty/openidc.lua \
+    && rm -rf /tmp/lua-resty-openidc
+
+RUN opm install bungle/lua-resty-session
 RUN mkdir -p /opt/simpleVMWebGateway
 
 RUN git clone \
