@@ -3,7 +3,7 @@ set -e
 
 echo "Rendering OpenResty configuration..."
 
-python3 /usr/local/bin/render_nginx.py
+python3 /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/render_nginx.py
 
 echo "Starting OpenResty..."
 openresty
