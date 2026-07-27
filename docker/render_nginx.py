@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
-TEMPLATE_DIR = "/opt/simpleVMWebGateway/FastapiOpenRestyConfigurator"
+TEMPLATE_DIR = "/etc/openresty/"
 OUTPUT_FILE = "/etc/openresty/nginx.conf"
 
 
