@@ -1,26 +1,52 @@
 FROM ubuntu:24.04
-MAINTAINER awalende
-
 
 ENV FORC_BACKEND_PATH=/var/forc/backend_path/
 ENV FORC_TEMPLATE_PATH=/var/forc/template_path/
 
-RUN mkdir -p /var/forc/backend_path/; mkdir -p /var/forc/template_path/
+RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH}
 
-RUN apt-get update; apt-get install -y sudo git wget gnupg ca-certificates software-properties-common python3 python3-pip python-setuptools; pip3 install uwsgi
-RUN wget -O - https://openresty.org/package/pubkey.gpg | sudo apt-key add -
-RUN add-apt-repository -y "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main"
-RUN apt-get update
-RUN apt-get -y install openresty
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    gnupg \
+    ca-certificates \
+    software-properties-common \
+    python3 \
+    python3-pip \
+    python3-venv \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install OpenResty
+RUN wget -qO- https://openresty.org/package/pubkey.gpg \
+    | gpg --dearmor \
+    -o /usr/share/keyrings/openresty.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/openresty.gpg] http://openresty.org/package/ubuntu $(lsb_release -sc) main" \
+    > /etc/apt/sources.list.d/openresty.list \
+    && apt-get update \
+    && apt-get install -y openresty \
+    && rm -rf /var/lib/apt/lists/*
 RUN opm install zmartzone/lua-resty-openidc
+
 RUN mkdir -p /opt/simpleVMWebGateway
-RUN git clone https://github.com/deNBI/simpleVMWebGateway.git /opt/simpleVMWebGateway/
-RUN pip3 install -r /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/requirements.txt
+
+RUN git clone \
+    https://github.com/deNBI/simpleVMWebGateway.git \
+    /opt/simpleVMWebGateway/
 
 WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
 
-COPY uwsgi.ini uwsgi.ini
-COPY launch.sh launch.sh
-RUN chmod +x launch.sh
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    && /opt/venv/bin/pip install -r requirements.txt \
+    && /opt/venv/bin/pip install gunicorn uvicorn
 
-CMD ./launch.sh
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY nginx.conf /etc/openresty/nginx.conf
+COPY gunicorn_conf.py gunicorn_conf.py
+COPY launch.sh launch.sh
+
+RUN chmod +x launch.sh
+EXPOSE 5000
+CMD ["./launch.sh"]
