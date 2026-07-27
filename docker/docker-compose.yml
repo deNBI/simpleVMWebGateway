@@ -1,6 +1,7 @@
 services:
   forc:
     image: forc
+    container_name: forc
     env_file:
       - ../FastapiOpenRestyConfigurator/.env
     volumes:
