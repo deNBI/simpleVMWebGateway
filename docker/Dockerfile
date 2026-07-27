@@ -43,7 +43,8 @@ RUN python3 -m venv /opt/venv \
 
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY nginx.conf /etc/openresty/nginx.conf
+COPY nginx.conf /etc/openresty/nginx.conf.j2
+COPY render_nginx.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
 COPY gunicorn_conf.py gunicorn_conf.py
 COPY launch.sh launch.sh
 

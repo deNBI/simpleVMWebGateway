@@ -1,4 +1,14 @@
 #!/bin/bash
+set -e
 
-#/usr/local/openresty/nginx/sbin/nginx -g 'daemon on; master_process on;'
-gunicorn -c gunicorn_conf.py main:app
+echo "Rendering OpenResty configuration..."
+
+python3 /usr/local/bin/render_nginx.py
+
+echo "Starting OpenResty..."
+openresty
+
+echo "Starting FastAPI..."
+exec gunicorn \
+    -c gunicorn_conf.py \
+    main:app
