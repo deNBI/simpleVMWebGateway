@@ -1,4 +1,6 @@
-bind = "0.0.0.0:5000"
+# Socket Path
+bind = "unix:/var/run/forc.sock"
+
 # Worker Options
 workers = 5
 worker_class = "uvicorn.workers.UvicornWorker"
