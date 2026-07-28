@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Starting cron..."
+service cron start
+
 echo "Rendering OpenResty configuration..."
 
 python3 /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/render_nginx.py

@@ -8,6 +8,7 @@ RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH}
 RUN apt-get update && apt-get install -y \
     git \
     wget \
+    curl \
     gnupg \
     ca-certificates \
     software-properties-common \
@@ -16,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     lsb-release \
     luarocks \
+    cron \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OpenResty
@@ -49,6 +51,13 @@ COPY nginx.conf /etc/openresty/nginx.conf.j2
 COPY render_nginx.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
 COPY gunicorn_conf.py gunicorn_conf.py
 COPY launch.sh launch.sh
+
+RUN mkdir -p /opt/scripts
+COPY generate_ip_blocklists.sh ip_blocklists.txt /opt/scripts/
+RUN chmod +x /opt/scripts/generate_ip_blocklists.sh
+
+RUN echo "0 */2 * * * root /opt/scripts/generate_ip_blocklists.sh && /usr/sbin/openresty -s reload" > /etc/cron.d/ip-blocklist \
+    && chmod 0644 /etc/cron.d/ip-blocklist
 
 RUN chmod +x launch.sh
 EXPOSE 5000

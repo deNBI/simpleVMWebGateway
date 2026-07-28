@@ -1,0 +1,6 @@
+https://rules.emergingthreats.net/blockrules/compromised-ips.txt
+https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/firehol_level2.netset
+https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/firehol_level3.netset
+https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/ciarmy.ipset
+https://lists.blocklist.de/lists/all.txt
+https://www.spamhaus.org/drop/drop.txt
