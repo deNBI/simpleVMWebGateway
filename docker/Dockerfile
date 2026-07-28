@@ -31,9 +31,11 @@ RUN wget -qO- https://openresty.org/package/pubkey.gpg \
 
 RUN    luarocks --lua-version=5.1 install lua-resty-openidc && luarocks --lua-version=5.1 install lua-resty-session 
 RUN git clone \
+    --branch refactor/docker \
+    --single-branch \
+    --depth 1 \
     https://github.com/deNBI/simpleVMWebGateway.git \
     /opt/simpleVMWebGateway/
-
 WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
 
 RUN python3 -m venv /opt/venv \
