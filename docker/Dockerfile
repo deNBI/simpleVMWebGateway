@@ -29,7 +29,7 @@ RUN wget -qO- https://openresty.org/package/pubkey.gpg \
     && rm -rf /var/lib/apt/lists/*
 
 
-RUN    luarocks --lua-version=5.1 install lua-resty-openidc && luarocks --lua-version=5.1 install lua-resty-session 
+RUN    luarocks --lua-version=5.1 install lua-resty-openidc 
 RUN git clone \
     --branch refactor/docker \
     --single-branch \
