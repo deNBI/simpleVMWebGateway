@@ -8,7 +8,7 @@ if [ ! -f /etc/openresty/block_ips_geo.conf ]; then
 fi
 
 echo "Rendering OpenResty configuration..."
-python3 /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/render_nginx.py
+python3 render_nginx.py
 
 echo "Starting OpenResty..."
 openresty

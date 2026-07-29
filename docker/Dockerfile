@@ -79,12 +79,12 @@ COPY --from=build-stage /usr/local/share/lua/5.1 /usr/local/share/lua/5.1
 
 
 # Copy application code and configurations
-WORKDIR /opt/simpleVMWebGateway/
-COPY FastapiOpenRestyConfigurator /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
+WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
+COPY FastapiOpenRestyConfigurator .
 # Copy Docker-specific files (build context is project root)
 COPY docker/nginx.conf /etc/openresty/nginx.conf.j2
-COPY docker/render_nginx.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
-COPY docker/gunicorn_conf.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
+COPY docker/render_nginx.py .
+COPY docker/gunicorn_conf.py .
 COPY docker/launch.sh /opt/launch.sh
 COPY docker/generate_ip_blocklists.sh docker/ip_blocklists.txt /opt/scripts/
 
