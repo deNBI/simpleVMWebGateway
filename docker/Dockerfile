@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 ENV FORC_BACKEND_PATH=/var/forc/backend_path/
 ENV FORC_TEMPLATE_PATH=/var/forc/template_path/
-
+ENV CONTAINERIZED=true
 RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH}
 
 RUN apt-get update && apt-get install -y \
