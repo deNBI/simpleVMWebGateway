@@ -25,7 +25,7 @@ while IFS= read -r url; do
 
     echo "Downloading: $url"
 
-    curl -fsSL "$url" >> "$TEMP" || echo "Failed: $url"
+    curl -fsSL -m 6  "$url" >> "$TEMP" || echo "Failed: $url"
 
 done < "$INPUT"
 

@@ -2,19 +2,27 @@
 set -e
 
 echo "Generating Block IPs for startup.."
-## only neede if not present
+## only needed if not present
 if [ ! -f /etc/openresty/block_ips_geo.conf ]; then
     /opt/scripts/generate_ip_blocklists.sh
 fi
-echo "Starting cron..."
-service cron start
 
 echo "Rendering OpenResty configuration..."
-
 python3 /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/render_nginx.py
 
 echo "Starting OpenResty..."
-openresty
+# Start openresty in background with a writable PID file
+openresty -g "pid /tmp/openresty.pid"
+
+echo "Starting Blocklist Updater Loop..."
+(
+    while true; do
+        sleep 7200 # 2 hours
+        echo "$(date): Updating blocklists..."
+        /opt/scripts/generate_ip_blocklists.sh
+        openresty -g "pid /tmp/openresty.pid" -s reload
+    done
+) &
 
 echo "Starting FastAPI..."
 exec gunicorn \
