@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "Generating Block IPs for startup.."
+./opt/scripts/generate_ip_blocklists.sh
 echo "Starting cron..."
 service cron start
 
