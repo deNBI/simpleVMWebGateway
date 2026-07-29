@@ -3,7 +3,7 @@ set -e
 
 echo "Generating Block IPs for startup.."
 ## only needed if not present
-if [ ! -f /etc/openresty/block_ips_geo.conf ]; then
+if [ ! -f /tmp/block_ips_geo.conf ]; then
     /opt/scripts/generate_ip_blocklists.sh
 fi
 
