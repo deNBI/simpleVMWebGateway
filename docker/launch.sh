@@ -11,8 +11,7 @@ echo "Rendering OpenResty configuration..."
 python3 /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/render_nginx.py
 
 echo "Starting OpenResty..."
-# Start openresty in background with a writable PID file and config file
-openresty -g "pid /tmp/openresty.pid" -c /tmp/nginx.conf
+openresty -c /tmp/nginx.conf
 
 echo "Starting Blocklist Updater Loop..."
 (
@@ -20,7 +19,7 @@ echo "Starting Blocklist Updater Loop..."
         sleep 7200 # 2 hours
         echo "$(date): Updating blocklists..."
         /opt/scripts/generate_ip_blocklists.sh
-        openresty -g "pid /tmp/openresty.pid" -s reload
+        openresty -g "pid /tmp/openresty.pid;" -s reload
     done
 ) &
 
