@@ -1,5 +1,5 @@
 # Socket Path
-bind = "unix:/var/run/forc.sock"
+bind = "unix:/tmp/forc.sock"
 
 # Worker Options
 workers = 5
@@ -7,5 +7,5 @@ worker_class = "uvicorn.workers.UvicornWorker"
 
 # Logging Options
 loglevel = "info"
-accesslog = "/var/log/forc.access.log"
-errorlog = "/var/log/forc.error.log"
+accesslog = "/tmp/forc.access.log"
+errorlog = "/tmp/forc.error.log"

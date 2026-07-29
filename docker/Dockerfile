@@ -1,10 +1,9 @@
-FROM ubuntu:24.04
+# --- Build Stage ---
+FROM ubuntu:24.04 AS build-stage
 
-ENV FORC_BACKEND_PATH=/var/forc/backend_path/
-ENV FORC_TEMPLATE_PATH=/var/forc/template_path/
-ENV CONTAINERIZED=true
-RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH}
+ENV DEBIAN_FRONTEND=noninteractive
 
+# Install build-time dependencies
 RUN apt-get update && apt-get install -y \
     git \
     wget \
@@ -12,12 +11,54 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     ca-certificates \
     software-properties-common \
+    lsb-release \
     python3 \
     python3-pip \
     python3-venv \
-    lsb-release \
     luarocks \
-    cron \
+    gcc \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install OpenResty in build stage to prepare artifacts if needed
+# However, OpenResty is a system package, we'll install it in runtime too.
+# But we need it here for luarocks.
+RUN wget -qO- https://openresty.org/package/pubkey.gpg \
+    | gpg --dearmor \
+    -o /usr/share/keyrings/openresty.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/openresty.gpg] http://openresty.org/package/ubuntu $(lsb_release -sc) main" \
+    > /etc/apt/sources.list.d/openresty.list \
+    && apt-get update \
+    && apt-get install -y openresty \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Lua modules
+RUN luarocks --lua-version=5.1 install lua-resty-openidc
+
+# Prepare Python virtual environment
+COPY FastapiOpenRestyConfigurator/requirements.txt /tmp/requirements.txt
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    && /opt/venv/bin/pip install -r /tmp/requirements.txt \
+    && /opt/venv/bin/pip install gunicorn uvicorn
+
+# --- Runtime Stage ---
+FROM ubuntu:24.04 AS runtime-stage
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV CONTAINERIZED=true
+ENV FORC_BACKEND_PATH=/var/forc/backend_path/
+ENV FORC_TEMPLATE_PATH=/var/forc/template_path/
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install runtime-only dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    ca-certificates \
+    curl \
+    libcap2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OpenResty
@@ -30,35 +71,37 @@ RUN wget -qO- https://openresty.org/package/pubkey.gpg \
     && apt-get install -y openresty \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user
+RUN groupadd -r gatewayuser && useradd -r -g gatewayuser -s /sbin/nologin gatewayuser
 
-RUN    luarocks --lua-version=5.1 install lua-resty-openidc 
-RUN git clone \
-    --branch refactor/docker \
-    --single-branch \
-    --depth 1 \
-    https://github.com/deNBI/simpleVMWebGateway.git \
-    /opt/simpleVMWebGateway/
-WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
+# Copy artifacts from build-stage
+COPY --from=build-stage /opt/venv /opt/venv
+COPY --from=build-stage /usr/local/share/lua/5.1 /usr/local/share/lua/5.1
+COPY --from=build-stage /usr/local/lib/lua/5.1 /usr/local/lib/lua/5.1
 
-RUN python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --upgrade pip \
-    && /opt/venv/bin/pip install -r requirements.txt \
-    && /opt/venv/bin/pip install gunicorn uvicorn
+# Copy application code and configurations
+WORKDIR /opt/simpleVMWebGateway
+COPY FastapiOpenRestyConfigurator /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
 
-ENV PATH="/opt/venv/bin:$PATH"
+# Copy Docker-specific files (build context is project root)
+COPY docker/nginx.conf /etc/openresty/nginx.conf.j2
+COPY docker/render_nginx.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
+COPY docker/gunicorn_conf.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
+COPY docker/launch.sh /opt/launch.sh
+COPY docker/generate_ip_blocklists.sh docker/ip_blocklists.txt /opt/scripts/
 
-COPY nginx.conf /etc/openresty/nginx.conf.j2
-COPY render_nginx.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
-COPY gunicorn_conf.py gunicorn_conf.py
-COPY launch.sh launch.sh
+# Setup permissions
+RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} /opt/scripts \
+    && chown -R gatewayuser:gatewayuser /opt/simpleVMWebGateway \
+    && chown -R gatewayuser:gatewayuser /opt/scripts \
+    && chown -R gatewayuser:gatewayuser /etc/openresty \
+    && chown -R gatewayuser:gatewayuser ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} \
+    && chmod +x /opt/launch.sh /opt/scripts/generate_ip_blocklists.sh
 
-RUN mkdir -p /opt/scripts
-COPY generate_ip_blocklists.sh ip_blocklists.txt /opt/scripts/
-RUN chmod +x /opt/scripts/generate_ip_blocklists.sh
+# Allow non-root user to bind to privileged ports
+RUN setcap 'cap_net_bind_service=+ep' /usr/sbin/openresty
 
-RUN echo "0 */2 * * * root /opt/scripts/generate_ip_blocklists.sh && /usr/sbin/openresty -s reload" > /etc/cron.d/ip-blocklist \
-    && chmod 0644 /etc/cron.d/ip-blocklist
+USER gatewayuser
 
-RUN chmod +x launch.sh
 EXPOSE 5000
-CMD ["./launch.sh"]
+CMD ["/opt/launch.sh"]
