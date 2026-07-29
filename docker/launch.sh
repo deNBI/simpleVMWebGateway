@@ -2,7 +2,10 @@
 set -e
 
 echo "Generating Block IPs for startup.."
-./opt/scripts/generate_ip_blocklists.sh
+## only neede if not present
+if [ ! -f /etc/openresty/block_ips_geo.conf ]; then
+    /opt/scripts/generate_ip_blocklists.sh
+fi
 echo "Starting cron..."
 service cron start
 
