@@ -58,6 +58,9 @@ RUN apt-get update && apt-get install -y \
     python3 \
     ca-certificates \
     curl \
+    wget \
+    gnupg \
+    lsb-release \
     libcap2 \
     && rm -rf /var/lib/apt/lists/*
 
