@@ -81,7 +81,6 @@ COPY --from=build-stage /usr/local/share/lua/5.1 /usr/local/share/lua/5.1
 # Copy application code and configurations
 WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
 COPY FastapiOpenRestyConfigurator /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
-
 # Copy Docker-specific files (build context is project root)
 COPY docker/nginx.conf /etc/openresty/nginx.conf.j2
 COPY docker/render_nginx.py /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/
@@ -92,6 +91,7 @@ COPY docker/generate_ip_blocklists.sh docker/ip_blocklists.txt /opt/scripts/
 # Setup permissions
 RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} /opt/scripts \
     && chmod +x /opt/launch.sh /opt/scripts/generate_ip_blocklists.sh
+COPY examples/templates  ${FORC_TEMPLATE_PATH} 
 
 EXPOSE 5000
 CMD ["/opt/launch.sh"]
