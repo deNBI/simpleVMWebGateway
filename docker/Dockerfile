@@ -79,7 +79,7 @@ COPY --from=build-stage /usr/local/share/lua/5.1 /usr/local/share/lua/5.1
 
 
 # Copy application code and configurations
-WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
+WORKDIR /opt/simpleVMWebGateway/
 COPY FastapiOpenRestyConfigurator /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
 # Copy Docker-specific files (build context is project root)
 COPY docker/nginx.conf /etc/openresty/nginx.conf.j2
