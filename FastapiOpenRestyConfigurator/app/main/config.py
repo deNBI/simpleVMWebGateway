@@ -3,6 +3,7 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings
 from pydantic import SecretStr, validator, DirectoryPath
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -11,16 +12,18 @@ class Settings(BaseSettings):
     Settings object.
     Reads settings from .env file.
     """
-    FORC_VERSION: str = '0.2'
+
+    FORC_VERSION: str = "0.2"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     FORC_API_KEY: SecretStr
-    FORC_SECRET_KEY: SecretStr = 'my_precious_secret_key'
+    FORC_SECRET_KEY: SecretStr = "my_precious_secret_key"
     FORC_BACKEND_PATH: DirectoryPath
     FORC_TEMPLATE_PATH: DirectoryPath
     FORC_USER_PATH: str = "users"
+    CONTAINERZIED: bool = False
 
-    @validator('FORC_USER_PATH', pre=True)
+    @validator("FORC_USER_PATH", pre=True)
     def apply_backend_path(cls, v, values):
         """
         Validates forc user path, as it depends on forc backend path.
@@ -29,7 +32,7 @@ class Settings(BaseSettings):
         :return: Updated FORC_USER_PATH.
         """
         # := assigns and compares a value. (if a := b:) == (a = b; if a:)
-        if FORC_BACKEND_PATH := values.get('FORC_BACKEND_PATH'):
+        if FORC_BACKEND_PATH := values.get("FORC_BACKEND_PATH"):
             return f"{FORC_BACKEND_PATH}/{v}"
         else:
             # should only happen when there was an error with FORC_BACKEND_PATH
@@ -39,6 +42,7 @@ class Settings(BaseSettings):
         """
         Config for settings object.
         """
+
         # Enabled case sensitive for reading variables from .env file
         case_sensitive = True
         # Path to .env file
