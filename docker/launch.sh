@@ -3,7 +3,7 @@ set -e
 
 echo "Generating Block IPs for startup.."
 ## only needed if not present
-if [ ! -f /tmp/block_ips_geo.conf ]; then
+if [ ! -f /etc/openresty/block_ips_geo.conf ]; then
     /opt/scripts/generate_ip_blocklists.sh
 fi
 
@@ -11,7 +11,7 @@ echo "Rendering OpenResty configuration..."
 python3 /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/render_nginx.py
 
 echo "Starting OpenResty..."
-openresty -c /tmp/nginx.conf
+openresty
 
 echo "Starting Blocklist Updater Loop..."
 (
@@ -19,7 +19,7 @@ echo "Starting Blocklist Updater Loop..."
         sleep 7200 # 2 hours
         echo "$(date): Updating blocklists..."
         /opt/scripts/generate_ip_blocklists.sh
-        openresty -g "pid /tmp/openresty.pid;" -s reload
+        openresty -s reload
     done
 ) &
 

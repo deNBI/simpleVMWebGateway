@@ -3,7 +3,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = "/etc/openresty/"
-OUTPUT_FILE = "/tmp/nginx.conf"
+OUTPUT_FILE = "/etc/openresty/nginx.conf"
 
 
 def main():

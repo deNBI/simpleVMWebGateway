@@ -61,7 +61,6 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     lsb-release \
-    libcap2-bin \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OpenResty
@@ -73,9 +72,6 @@ RUN wget -qO- https://openresty.org/package/pubkey.gpg \
     && apt-get update \
     && apt-get install -y openresty \
     && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user
-RUN groupadd -r gatewayuser && useradd -r -g gatewayuser -s /sbin/nologin gatewayuser
 
 # Copy artifacts from build-stage
 COPY --from=build-stage /opt/venv /opt/venv
@@ -109,18 +105,7 @@ COPY docker/generate_ip_blocklists.sh docker/ip_blocklists.txt /opt/scripts/
 
 # Setup permissions
 RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} /opt/scripts \
-    && chown -R gatewayuser:gatewayuser /opt/simpleVMWebGateway \
-    && chown -R gatewayuser:gatewayuser /opt/scripts \
-    && chown -R gatewayuser:gatewayuser /etc/openresty \
-    && chown -R gatewayuser:gatewayuser ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} \
     && chmod +x /opt/launch.sh /opt/scripts/generate_ip_blocklists.sh
-
-# Allow non-root user to bind to privileged ports
-# OpenResty's /usr/bin/openresty is often a shell script wrapper.
-# We need to set capabilities on the actual nginx binary.
-RUN setcap 'cap_net_bind_service=+ep' /usr/local/openresty/nginx/sbin/nginx
-
-USER gatewayuser
 
 EXPOSE 5000
 CMD ["/opt/launch.sh"]
