@@ -16,7 +16,7 @@ RUN apk add --no-cache \
 
 # Install Lua modules into OpenResty lualib directory
 RUN luarocks-5.1 install lua-resty-openidc \
-    && cp -r /usr/local/share/lua/5.1/resty/* /usr/local/openresty/lualib/resty/
+    && cp -r /usr/local/share/lua/5.1/* /usr/local/openresty/lualib/
 
 # Prepare Python virtual environment
 COPY FastapiOpenRestyConfigurator/requirements.txt /tmp/requirements.txt
