@@ -8,8 +8,7 @@ on:
       - 'hotfix/**'
 jobs:
   build:
-    runs-on: [self-hosted,bielefeld]
-    concurrency: api
+    runs-on: ubuntu-latest
     steps:
       - name: Clean up repository directory (with elevated privileges) -.pytest_cache
         shell: bash
