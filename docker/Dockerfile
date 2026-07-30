@@ -87,7 +87,7 @@ COPY docker/render_nginx.py .
 COPY docker/gunicorn_conf.py .
 COPY docker/launch.sh .
 COPY docker/generate_ip_blocklists.sh docker/ip_blocklists.txt /opt/scripts/
-COPY docker/html /usr/local/openresty/nginx
+COPY docker/html /usr/local/openresty/nginx/html
 # Setup permissions
 RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} /opt/scripts \
     && chmod +x launch.sh /opt/scripts/generate_ip_blocklists.sh
