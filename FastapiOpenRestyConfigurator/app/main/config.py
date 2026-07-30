@@ -1,7 +1,7 @@
 import os
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr, field_validator, DirectoryPath
 from pydantic import field_validator, ValidationInfo
 
@@ -41,17 +41,12 @@ class Settings(BaseSettings):
         # should only happen when there was an error with FORC_BACKEND_PATH
         return "/var/forc/backend_path/users"
 
-    class Config:
-        """
-        Config for settings object.
-        """
-
-        # Enabled case sensitive for reading variables from .env file
-        case_sensitive = True
-        # Path to .env file
-        env_file = ".env"
-        # Encoding of .env file
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 @lru_cache()

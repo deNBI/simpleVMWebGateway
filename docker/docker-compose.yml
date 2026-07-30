@@ -3,10 +3,12 @@ services:
     image: forc
     container_name: forc
     env_file:
-      - ../FastapiOpenRestyConfigurator/.env
+      - ../FastapiOpenRestyConfigurator/.env  # envs for openresty
     volumes:
-      - /var/forc/backend_path/:/var/forc/backend_path/:rw
-      - /var/forc/template_path/:/var/forc/template_path/:rw
+      - /var/forc/backend_path/:/var/forc/backend_path/:rw   # for persistence should be mounted
+      #- /var/forc/template_path/:/var/forc/template_path/:rw  # optional default has the exmaples/templates
+      - /etc/letsencrypt/:/etc/letsencrypt/:r  #needs to provided for cert
+      - .env.forc:/opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/.env  # needs to be mounted for roc
     ports:
       - 0.0.0.0:5000:5000
       - 0.0.0.0:80:80
