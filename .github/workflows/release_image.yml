@@ -5,7 +5,7 @@ on:
       - '*'
 jobs:
   build_release:
-    runs-on: [self-hosted, production, build]
+    runs-on: ubuntu-latest
 
     steps:
      - name: Clean up repository directory (with elevated privileges) -.pytest_cache
