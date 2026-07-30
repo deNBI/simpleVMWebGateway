@@ -85,13 +85,13 @@ COPY FastapiOpenRestyConfigurator .
 COPY docker/nginx.conf /etc/openresty/nginx.conf.j2
 COPY docker/render_nginx.py .
 COPY docker/gunicorn_conf.py .
-COPY docker/launch.sh /opt/launch.sh
+COPY docker/launch.sh .
 COPY docker/generate_ip_blocklists.sh docker/ip_blocklists.txt /opt/scripts/
 
 # Setup permissions
 RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} /opt/scripts \
-    && chmod +x /opt/launch.sh /opt/scripts/generate_ip_blocklists.sh
+    && chmod +x launch.sh /opt/scripts/generate_ip_blocklists.sh
 COPY examples/templates  ${FORC_TEMPLATE_PATH} 
 
 EXPOSE 5000
-CMD ["/opt/launch.sh"]
+CMD ["./launch.sh"]

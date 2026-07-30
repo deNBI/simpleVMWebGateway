@@ -5,7 +5,7 @@ Service to reload openresty by starting a process.
 import asyncio
 import logging
 
-from FastapiOpenRestyConfigurator.app.main.config import get_settings
+from app.main.config import get_settings
 
 settings = get_settings()
 
