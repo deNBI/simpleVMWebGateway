@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-test:
-    runs-on: [self-hosted, build]
+    runs-on: ubuntu-latest
     steps:
       - name: Workflow run cleanup action
         uses: rokroskar/workflow-run-cleanup-action@ee1451b869ba1e381729b3d40489997021f0d562 # v0.3.3
