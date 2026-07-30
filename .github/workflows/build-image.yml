@@ -1,0 +1,54 @@
+name: build-image
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: [self-hosted, build]
+    steps:
+      - name: Workflow run cleanup action
+        uses: rokroskar/workflow-run-cleanup-action@ee1451b869ba1e381729b3d40489997021f0d562 # v0.3.3
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Build and publish image to OCI
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          file: ./compose/production/django/Dockerfile
+          push: false
+          load: true
+          tags: localbuild/testimage:latest
+          cache-db: true
+      - name: Scan image (table)
+        if: always()
+
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2
+        with:
+          image: "localbuild/testimage:latest"
+          output-format: table
+          fail-build: true
+          severity-cutoff: critical
+      - name: Scan image (JSON)
+        if: always()
+
+        id: scan-json
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2
+        with:
+          image: "localbuild/testimage:latest"
+          output-format: json
+          fail-build: false
+          output-file: scan-results.json
+      - name: Check scan results
+        if: always()
+        run: |
+          MAX_RISK=$(jq '[.matches[].vulnerability.risk // empty] | if length > 0 then max else 0 end' scan-results.json)
+          echo "Max vulnerability risk: ${MAX_RISK}%"
+          CRITICAL=$(jq '[.matches[].vulnerability.severity] | map(select(. == "Critical")) | length' scan-results.json)
+          echo "Critical vulnerabilities: ${CRITICAL}"
+          if [ "${CRITICAL}" -gt 0 ] || [ "$(echo "${MAX_RISK} > 50" | bc)" -eq 1 ]; then
+            echo "::error::Scan failed: ${CRITICAL} critical CVE(s), max risk ${MAX_RISK}%"
+            exit 1
+          fi
