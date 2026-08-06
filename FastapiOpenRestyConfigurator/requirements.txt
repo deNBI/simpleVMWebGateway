@@ -1,7 +1,11 @@
-fastapi==0.136.1
-uvicorn==0.47.0
+fastapi==0.139.2
+uvicorn==0.52.0
 werkzeug==3.1.8
 Jinja2==3.1.6
 python-dotenv==1.2.2
 gunicorn==26.0.0
 pydantic-settings
+factory-boy==3.3.3
+# testing
+pytest==9.1.1
+pytest-asyncio==1.4.0
