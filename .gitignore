@@ -13,3 +13,4 @@ ansible/test.json
 FastapiOpenRestyConfigurator/.env
 template_path
 backend_path
+*/plans

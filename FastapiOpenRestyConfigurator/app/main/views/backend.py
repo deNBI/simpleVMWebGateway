@@ -4,7 +4,7 @@ Backend view.
 import logging
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse
 from fastapi.openapi.models import APIKey
 from werkzeug.exceptions import NotFound, InternalServerError
@@ -46,6 +46,39 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
         raise HTTPException(status_code=400)
 
 
+@router.post(
+    "/backends/{backend_id}/auth/",
+    response_model=BackendOut,
+    tags=["Backends"],
+    summary="Set owner authorization to true/false for an existing backend."
+)
+async def backend_update_auth(backend_id: int, body: dict = Body(...), api_key: APIKey = Depends(get_api_key)):
+    # process inputs TODO: should we validate further?
+    logger.debug(f"Received request to update backend authorization with backend_id: {backend_id} and body: {body}")
+    backend_id = int(secure_filename(str(backend_id))) # TODO: are secure_filename and str necessary? validation?
+    if backend_id is None:
+        raise HTTPException(status_code=400, detail="backend_id is required")
+    enable_auth = bool(body.get("auth_enabled", None))
+    logger.debug(f"Attempting to update backend authorization to {enable_auth} for backend id: {backend_id}")
+
+    # check inputs and raise error
+    if backend_id is None or enable_auth is None or not isinstance(enable_auth, bool):
+        logger.error(
+            f"Received faulty data. backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
+        raise HTTPException(status_code=422, detail =
+                            f"auth_enabled is required and must be a boolean, \
+                                backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
+    # forward to service layer
+    else:
+        try:
+            return await backend_service.update_backend_authorization(backend_id, enable_auth)
+        # TODO: the exceptions are raised in the service layer already, do we still need this?
+        except NotFound:
+            raise HTTPException(status_code=404, detail=f"Backend with id {backend_id} not found.")
+        except InternalServerError:
+            raise HTTPException(status_code=500, detail="Internal server error.")
+
+
 @router.get(
     "/backends/{backend_id}",
     response_model=BackendOut,
@@ -75,6 +108,8 @@ async def get_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)):
 async def delete_backend(backend_id: int, api_key: APIKey = Depends(get_api_key)):
     try:
         backend_id = int(secure_filename(str(backend_id)))
+        if backend_id is None:
+            raise HTTPException(status_code=400, detail="backend_id is required")
         await backend_service.delete_backend(backend_id)
         await user_service.delete_all(backend_id)
     except NotFound:

@@ -1,26 +1,71 @@
-FROM ubuntu:24.04
-MAINTAINER awalende
+# --- Build Stage ---
+FROM openresty/openresty:1.31-alpine-slim AS build-stage
 
+# Install build-time dependencies
+RUN apk add --no-cache \
+    bash \
+    gcc \
+    make \
+    musl-dev \
+    lua5.1-dev \
+    git \
+    python3 \
+    python3-dev \
+    py3-pip \
+    luarocks5.1
 
+# Install Lua modules into OpenResty lualib directory
+RUN luarocks-5.1 install lua-resty-openidc \
+    && cp -r /usr/local/share/lua/5.1/* /usr/local/openresty/lualib/
+
+# Prepare Python virtual environment
+COPY FastapiOpenRestyConfigurator/requirements.txt /tmp/requirements.txt
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip \
+    && /opt/venv/bin/pip install -r /tmp/requirements.txt \
+    && /opt/venv/bin/pip install gunicorn uvicorn
+
+# --- Runtime Stage ---
+FROM openresty/openresty:1.31-alpine-slim AS runtime-stage
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV CONTAINERIZED=true
 ENV FORC_BACKEND_PATH=/var/forc/backend_path/
 ENV FORC_TEMPLATE_PATH=/var/forc/template_path/
+ENV PATH="/opt/venv/bin:$PATH"
 
-RUN mkdir -p /var/forc/backend_path/; mkdir -p /var/forc/template_path/
+# Install runtime-only dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    wget \
+    ca-certificates \
+    python3
 
-RUN apt-get update; apt-get install -y sudo git wget gnupg ca-certificates software-properties-common python3 python3-pip python-setuptools; pip3 install uwsgi
-RUN wget -O - https://openresty.org/package/pubkey.gpg | sudo apt-key add -
-RUN add-apt-repository -y "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main"
-RUN apt-get update
-RUN apt-get -y install openresty
-RUN opm install zmartzone/lua-resty-openidc
-RUN mkdir -p /opt/simpleVMWebGateway
-RUN git clone https://github.com/deNBI/simpleVMWebGateway.git /opt/simpleVMWebGateway/
-RUN pip3 install -r /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/requirements.txt
+# Path Mapping: Link /etc/openresty to the default OpenResty config directory
+# This maintains compatibility with render_nginx.py and scripts
+RUN ln -snf /usr/local/openresty/nginx/conf /etc/openresty
 
+# Copy artifacts from build-stage
+COPY --from=build-stage /opt/venv /opt/venv
+COPY --from=build-stage /usr/local/openresty/lualib /usr/local/openresty/lualib
+
+# Copy application code and configurations
 WORKDIR /opt/simpleVMWebGateway/FastapiOpenRestyConfigurator
+COPY FastapiOpenRestyConfigurator .
+# Copy Docker-specific files (build context is project root)
+COPY docker/nginx.conf /etc/openresty/nginx.conf.j2
+COPY docker/render_nginx.py .
+COPY docker/gunicorn_conf.py .
+COPY docker/launch.sh .
+COPY docker/generate_ip_blocklists.sh docker/ip_blocklists.txt /opt/scripts/
+COPY docker/html /usr/local/openresty/nginx/html
 
-COPY uwsgi.ini uwsgi.ini
-COPY launch.sh launch.sh
-RUN chmod +x launch.sh
+# Setup permissions
+RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} /opt/scripts \
+    && chmod +x launch.sh /opt/scripts/generate_ip_blocklists.sh
+COPY examples/templates  ${FORC_TEMPLATE_PATH}
 
-CMD ./launch.sh
+EXPOSE 5000
+CMD ["./launch.sh"]

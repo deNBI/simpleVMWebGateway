@@ -1,8 +1,10 @@
 import os
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings
-from pydantic import SecretStr, validator, DirectoryPath
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import SecretStr, field_validator, DirectoryPath
+from pydantic import field_validator, ValidationInfo
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -11,40 +13,40 @@ class Settings(BaseSettings):
     Settings object.
     Reads settings from .env file.
     """
-    FORC_VERSION: str = '0.2'
+
+    FORC_VERSION: str = "0.2"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     FORC_API_KEY: SecretStr
-    FORC_SECRET_KEY: SecretStr = 'my_precious_secret_key'
+    FORC_SECRET_KEY: SecretStr = "my_precious_secret_key"
     FORC_BACKEND_PATH: DirectoryPath
     FORC_TEMPLATE_PATH: DirectoryPath
     FORC_USER_PATH: str = "users"
+    CONTAINERIZED: bool = False
 
-    @validator('FORC_USER_PATH', pre=True)
-    def apply_backend_path(cls, v, values):
+    @field_validator("FORC_USER_PATH", mode="before")
+    @classmethod
+    def apply_backend_path(cls, v, info: ValidationInfo):
         """
         Validates forc user path, as it depends on forc backend path.
         :param v: Value for forc user path.
-        :param values: Values already read for settings object.
+        :param info: Validation context containing already validated fields.
         :return: Updated FORC_USER_PATH.
         """
-        # := assigns and compares a value. (if a := b:) == (a = b; if a:)
-        if FORC_BACKEND_PATH := values.get('FORC_BACKEND_PATH'):
-            return f"{FORC_BACKEND_PATH}/{v}"
-        else:
-            # should only happen when there was an error with FORC_BACKEND_PATH
-            return "/var/forc/backend_path/users"
+        forc_backend_path = info.data.get("FORC_BACKEND_PATH")
 
-    class Config:
-        """
-        Config for settings object.
-        """
-        # Enabled case sensitive for reading variables from .env file
-        case_sensitive = True
-        # Path to .env file
-        env_file = ".env"
-        # Encoding of .env file
-        env_file_encoding = "utf-8"
+        if forc_backend_path:
+            return f"{forc_backend_path}/{v}"
+
+        # should only happen when there was an error with FORC_BACKEND_PATH
+        return "/var/forc/backend_path/users"
+
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 @lru_cache()
