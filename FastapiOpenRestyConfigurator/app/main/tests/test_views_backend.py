@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch
-from fastapi import HTTPException
 
 from app.main.views import backend as backend_views
 

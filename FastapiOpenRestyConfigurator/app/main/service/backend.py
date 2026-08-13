@@ -13,6 +13,7 @@ from ..model.serializers import BackendOut, BackendIn, BackendTemp
 from ..service.openresty import reload_openresty
 from ..util.templating import generate_backend_by_template
 from ..config import get_settings
+from ..util.logging import sanitize_log
 
 logger = logging.getLogger("service")
 
@@ -39,14 +40,14 @@ async def generate_suffix_number(location_url: str | None = None) -> int:
     # extract current suffix number, check validity
     current_suffix_number: int = int(location_url.split("_")[1])
     if current_suffix_number < 100 or current_suffix_number > 999:
-        logger.error("Invalid user_key_url provided for suffix generation: " + location_url)
+        logger.error(sanitize_log("Invalid user_key_url provided for suffix generation: " + location_url))
         raise InternalServerError("Invalid user_key_url provided for suffix generation.")
 
     # determine suffix number
     highest_id = await get_highest_suffix_number(location_url)
 
     if highest_id == 999:
-        logger.warning("Reached max index number for requested user_key_url: " + location_url)
+        logger.warning(sanitize_log("Reached max index number for requested user_key_url: " + location_url))
         raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
     return highest_id + 1
 
@@ -75,7 +76,7 @@ def generate_backend_filename(backend: BackendOut) -> str:
     if b.id and b.owner and b.location_url and b.template and b.template_version and b.auth_enabled is not None:
         return f"{str(b.id)}%{b.owner}%{b.location_url}%{b.template}%{b.template_version}%{str(int(b.auth_enabled))}.conf"
     else:
-        logger.error("Not all necessary backend fields are set for filename generation: " + str(backend))
+        logger.error(sanitize_log("Not all necessary backend fields are set for filename generation: " + str(backend)))
         raise InternalServerError("Filename generation failed.")
 
 
@@ -90,14 +91,14 @@ async def get_backends() -> List[BackendOut]:
     if len(os.listdir(settings.FORC_BACKEND_PATH)) == 0:
         return []
     backend_path_filenames = os.listdir(settings.FORC_BACKEND_PATH)
-    logger.debug(f"Files in backend_path: {backend_path_filenames}")
+    logger.debug(sanitize_log(f"Files in backend_path: {backend_path_filenames}"))
     valid_backends = []
     for filename in backend_path_filenames:
         match = re.fullmatch(filename_regex, filename)
         if not match:
             if filename == "users" or filename == "scripts":
                 continue
-            logger.debug("Found a backend file with wrong naming, skipping it: " + str(filename))
+            logger.debug(sanitize_log("Found a backend file with wrong naming, skipping it: " + str(filename)))
             continue
 
         backend: BackendOut = BackendOut(
@@ -152,7 +153,7 @@ def extract_proxy_pass(file_path) -> str | None:
     if match:
         return match.group(1)
     else:
-        logger.error(f"Could not extract proxy_pass from {file_path}")
+        logger.error(sanitize_log(f"Could not extract proxy_pass from {file_path}"))
         return None
 
 
@@ -178,13 +179,13 @@ def get_basekey_from_backend(backend: BackendOut) ->  str | None:
             logger.error("backend or backend.location_url is None.")
             return None
         if "_" not in backend.location_url:
-            logger.error(f"location_url has no suffix pattern: {backend.location_url}")
+            logger.error(sanitize_log(f"location_url has no suffix pattern: {backend.location_url}"))
             return None
         # split and return basekey
         base_key = backend.location_url.split("_")[0]
         return base_key
     except ValueError:
-        logger.error(f"could not get basekey from location_url: {backend.location_url}")
+        logger.error(sanitize_log(f"could not get basekey from location_url: {backend.location_url}"))
         return None
 
 
@@ -192,7 +193,7 @@ def get_basekey_from_backend(backend: BackendOut) ->  str | None:
 # CORE MUTATOR AND SERVICE FUNCTIONS
 
 async def create_backend(payload_input: BackendIn, **kwargs) -> BackendTemp:
-    logger.info(f"Attempting to create backend with user_key_url: {payload_input.user_key_url}")
+    logger.info(sanitize_log(f"Attempting to create backend with user_key_url: {payload_input.user_key_url}"))
     settings = get_settings()
 
     # overwrite payload as BackendTemp for generate_backend_by_template()
@@ -228,32 +229,32 @@ async def delete_backend(backend_id) -> bool:
     settings = get_settings()
     backend_path_filenames = get_valid_backend_filenames()
     if not backend_path_filenames:
-        logger.error(f"Backend {backend_id} was not found.")
+        logger.error(sanitize_log(f"Backend {backend_id} was not found."))
         raise NotFound(f"Backend {backend_id} was not found.")
 
     matching_backend_filenames = filter_backend_filenames_by_id(backend_path_filenames, backend_id)
 
     number_of_files = len(matching_backend_filenames)
     if number_of_files == 0:
-        logger.error(f"Backend {backend_id} was not found")
+        logger.error(sanitize_log(f"Backend {backend_id} was not found"))
         raise NotFound(f"Backend {backend_id} was not found.")
     if number_of_files > 1:
-        logger.error(f"Found multiple backend files for backend id: {backend_id}, cannot delete.")
+        logger.error(sanitize_log(f"Found multiple backend files for backend id: {backend_id}, cannot delete."))
         raise InternalServerError("Found multiple backend files for backend id: {backend_id}, cannot delete.")
     if not number_of_files == 1: # fallback
-        logger.error(f"Something went wrong. Did not expect multiple files for deletion. Backend id: {backend_id}")
+        logger.error(sanitize_log(f"Something went wrong. Did not expect multiple files for deletion. Backend id: {backend_id}"))
         raise InternalServerError(f"Something went wrong. Did not expect multiple files for deletion. Backend id: {backend_id}")
 
     filename = matching_backend_filenames[0]
 
-    logger.info(f"Attempting to delete backend with id: {backend_id} as file: {settings.FORC_BACKEND_PATH}/{filename}")
+    logger.info(sanitize_log(f"Attempting to delete backend with id: {backend_id} as file: {settings.FORC_BACKEND_PATH}/{filename}"))
     try:
         os.remove(f"{settings.FORC_BACKEND_PATH}/{filename}")
-        logger.info(f"Deleted backend with id: {backend_id}")
+        logger.info(sanitize_log(f"Deleted backend with id: {backend_id}"))
         await reload_openresty()
         return True
     except OSError as e:
-        logger.warning(f"Was not able to delete backend with id: {backend_id} ERROR: {e}")
+        logger.warning(sanitize_log(f"Was not able to delete backend with id: {backend_id} ERROR: {e}"))
         raise InternalServerError("Server was not able to delete this backend. Contact the admin.")
 
 
@@ -274,7 +275,7 @@ async def update_backend_authorization(backend_id: int, auth_enable: bool) -> Ba
         logger.error("Templating returned empty result.")
         return None
 
-    logger.info(f"Updated backend authorization to {temp_payload.auth_enabled} for backend id: {backend_id}")
+    logger.info(sanitize_log(f"Updated backend authorization to {temp_payload.auth_enabled} for backend id: {backend_id}"))
     
     # convert BackendTemp to BackendOut for returning
     returning_backend = await convert_backend_temp_to_out(new_contents)
@@ -304,7 +305,7 @@ async def set_backend_id_and_suffix(backend: BackendTemp, **kwargs) -> tuple[Bac
     # if no id provided, generate id and suffix
     else:
         if kwargs != {}:
-            logger.warning(f"set_backend_id_and_suffix() received unexpected kwargs: {kwargs}")
+            logger.warning(sanitize_log(f"set_backend_id_and_suffix() received unexpected kwargs: {kwargs}"))
             raise InternalServerError("Unexpected kwargs provided to set_backend_id_and_suffix().") # @reviewer: should we really error here?
         backend = backend.model_copy(update={'id': str(random_with_n_digits(10))})
         suffix_number = await generate_suffix_number(backend.location_url)
@@ -322,16 +323,16 @@ async def delete_duplicate_backends(backend_with_proxy_pass: BackendIn) -> bool:
     # get all backends linked to the given proxy_pass
     backends_proxy_passes: Dict[str, List[BackendOut]] = await get_backends_proxy_pass()
     matching_backends: List[BackendOut] = backends_proxy_passes.get(proxy_pass, [])
-    logger.info(f"Matching backends: {matching_backends}")
+    logger.info(sanitize_log(f"Matching backends: {matching_backends}"))
     # delete all matching backends
     if len(matching_backends) == 0:
-        logger.warning("No matching backends found with proxy_pass: " + str(proxy_pass))
+        logger.warning(sanitize_log("No matching backends found with proxy_pass: " + str(proxy_pass)))
     else:
         for backend in matching_backends:
             if await delete_backend(backend_id = backend.id):
-                logger.info(f"Deleted existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
+                logger.info(sanitize_log(f"Deleted existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}"))
             else:
-                logger.error(f"Failed to delete existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}")
+                logger.error(sanitize_log(f"Failed to delete existing backend with same proxy_pass: {proxy_pass}, backend id: {backend.id}"))
                 return False
     return True
 
@@ -353,7 +354,7 @@ async def convert_backend_temp_to_out(backend_temp: BackendTemp) -> BackendOut |
         )
         return backend_out
     except Exception as e:
-        logger.error(f"Error converting BackendTemp to BackendOut: {e}")
+        logger.error(sanitize_log(f"Error converting BackendTemp to BackendOut: {e}"))
         return None
 
 
@@ -382,7 +383,7 @@ def check_backend_file_naming(backend_path_filename: str) -> bool:
     else:
         # exclude expected files from warning
         if not backend_path_filename == "users" and not backend_path_filename == "scripts":
-            logger.debug(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}")
+            logger.debug(sanitize_log(f"Found a backend file with wrong naming, skipping it: {backend_path_filename}"))
         return False
 
 
@@ -431,7 +432,7 @@ def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> Ba
     upstream_url = get_upstream_url(backend.file_path)
     base_key = get_basekey_from_backend(backend)
     if not upstream_url or not base_key:
-        logger.error(f"Could not extract necessary info (upstream_url and base_key) from backend id: {backend.id} for updating authorization")
+        logger.error(sanitize_log(f"Could not extract necessary info (upstream_url and base_key) from backend id: {backend.id} for updating authorization"))
         return None
 
     # build new temporary payload as BackendIn
@@ -446,5 +447,5 @@ def build_payload_for_auth_update(backend: BackendOut, auth_enabled: bool) -> Ba
         )
         return temp_payload
     except Exception as e:
-        logger.error(f"Error building temp payload for backend update: {e}")
+        logger.error(sanitize_log(f"Error building temp payload for backend update: {e}"))
         return None

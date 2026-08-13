@@ -14,6 +14,7 @@ from ..model.serializers import BackendIn, BackendOut
 from ..service import backend as backend_service
 from ..service import user as user_service
 from ..util.auth import get_api_key
+from ..util.logging import sanitize_log
 
 router = APIRouter()
 logger = logging.getLogger("view")
@@ -54,17 +55,17 @@ async def create_backend(backend_in: BackendIn, api_key: APIKey = Depends(get_ap
 )
 async def backend_update_auth(backend_id: int, body: dict = Body(...), api_key: APIKey = Depends(get_api_key)):
     # process inputs TODO: should we validate further?
-    logger.debug(f"Received request to update backend authorization with backend_id: {backend_id} and body: {body}")
+    logger.debug(sanitize_log(f"Received request to update backend authorization with backend_id: {backend_id} and body: {body}"))
     backend_id = int(secure_filename(str(backend_id))) # TODO: are secure_filename and str necessary? validation?
     if backend_id is None:
         raise HTTPException(status_code=400, detail="backend_id is required")
     enable_auth = bool(body.get("auth_enabled", None))
-    logger.debug(f"Attempting to update backend authorization to {enable_auth} for backend id: {backend_id}")
+    logger.debug(sanitize_log(f"Attempting to update backend authorization to {enable_auth} for backend id: {backend_id}"))
 
     # check inputs and raise error
     if backend_id is None or enable_auth is None or not isinstance(enable_auth, bool):
         logger.error(
-            f"Received faulty data. backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")
+            sanitize_log(f"Received faulty data. backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}"))
         raise HTTPException(status_code=422, detail =
                             f"auth_enabled is required and must be a boolean, \
                                 backend_id: {backend_id}, auth_enabled: {enable_auth}, {type(enable_auth)}")

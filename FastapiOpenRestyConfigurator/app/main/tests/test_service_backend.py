@@ -458,7 +458,7 @@ async def test_delete_backend(exception_expected, backend_path_filenames, matchi
     ) as mock_os_remove, patch(
         "app.main.service.backend.reload_openresty"
     ) as mock_reload_openresty:
-
+        number_of_files = 0
         try:
             number_of_files = len(matching_backend_filenames)
             result = await backend_service.delete_backend(0) # backend_id irrelevant due to mocks
