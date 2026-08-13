@@ -5,6 +5,11 @@ from ..config import get_settings
 
 settings = get_settings()
 
+def sanitize_log(message: str) -> str:
+    if not isinstance(message, str):
+        message = str(message)
+    return message.replace('\n', '\\n').replace('\r', '\\r')
+
 log_config = {
     "version": 1,
     "disable_existing_loggers": False,

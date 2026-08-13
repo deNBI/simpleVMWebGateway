@@ -9,7 +9,7 @@ OUTPUT_FILE = "/etc/openresty/nginx.conf"
 def main():
     env = Environment(
         loader=FileSystemLoader(TEMPLATE_DIR),
-        autoescape=False,
+        autoescape=True,
     )
 
     template = env.get_template("nginx.conf.j2")
