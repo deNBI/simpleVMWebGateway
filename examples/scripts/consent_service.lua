@@ -1,5 +1,6 @@
 local session = require("resty.session")
-local aes = require("resty.aes") -- Not needed if using resty.session's built-in signing
+
+math.randomseed(os.time())
 
 local _M = {}
 
@@ -29,7 +30,8 @@ function _M.check_consent()
 
     -- Consent missing, redirect to /consent
     local return_to = ngx.var.uri .. (ngx.var.args and "?" .. ngx.var.args or "")
-    return ngx.redirect("/consent?return_to=" .. ngx.escape_uri(return_to))
+    ngx.redirect("/consent?return_to=" .. ngx.escape_uri(return_to))
+    return false
 end
 
 function _M.render_consent_page(return_to)
