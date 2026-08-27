@@ -39,7 +39,13 @@ function _M.render_consent_page(return_to)
 
     -- Generate and store CSRF token
     local csrf_token = generate_token(32)
-    sess.data = sess.data or {}
+
+    -- Fix: Do not replace sess.data with a new table to avoid breaking proxy tracking in lua-resty-session
+    if not sess.data then
+        -- This case is rare as session.new() usually initializes sess.data,
+        -- but we handle it without replacing the root reference if possible.
+        sess.data = {}
+    end
     sess.data.consent_csrf = csrf_token
     sess:save()
 
@@ -80,6 +86,7 @@ function _M.render_consent_page(return_to)
 end
 
 function _M.handle_consent_post()
+    ngx.header.content_type = "text/plain; charset=utf-8"
     local sess = session.new()
     ngx.req.read_body()
     local args = ngx.req.get_post_args()
@@ -87,10 +94,28 @@ function _M.handle_consent_post()
     local csrf_token = args["csrf_token"]
     local return_to = args["return_to"]
 
-    -- 1. CSRF Validation
-    if not csrf_token or not sess.data or sess.data.consent_csrf ~= csrf_token then
+    -- 1. CSRF Validation with detailed debug info
+    if not csrf_token then
         ngx.status = ngx.HTTP_FORBIDDEN
-        ngx.say("Invalid CSRF token")
+        ngx.say("CSRF Error: No token provided in POST request")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    if not sess.data then
+        ngx.status = ngx.HTTP_FORBIDDEN
+        ngx.say("CSRF Error: No session found. Cookie might be missing or invalid.")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    if not sess.data.consent_csrf then
+        ngx.status = ngx.HTTP_FORBIDDEN
+        ngx.say("CSRF Error: No token found in session. Session exists but was not initialized with a token.")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    if sess.data.consent_csrf ~= csrf_token then
+        ngx.status = ngx.HTTP_FORBIDDEN
+        ngx.say(string.format("CSRF Error: Token mismatch. Expected [%s], got [%s]", sess.data.consent_csrf, csrf_token))
         return ngx.exit(ngx.HTTP_FORBIDDEN)
     end
 
