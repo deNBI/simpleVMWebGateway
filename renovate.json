@@ -36,6 +36,12 @@
         "pin"
       ],
       "enabled": false
+    },
+    {
+      "matchLabels": [
+        "security"
+      ],
+      "minimumReleaseAge": null
     }
   ],
   "osvVulnerabilityAlerts": true,
@@ -60,5 +66,6 @@
   "bumpVersion": "minor",
   "rebaseWhen": "behind-base-branch",
   "commitBodyTable": true,
-  "commitMessagePrefix": "feat(Dependencies):"
+  "commitMessagePrefix": "feat(Dependencies):",
+  "minimumReleaseAge": "3 days"
 }
