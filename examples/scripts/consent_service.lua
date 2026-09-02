@@ -2,54 +2,83 @@ local session = require("resty.session")
 
 local _M = {}
 
+local CONSENT_TTL = 86400
+
 -- Valid return_to URLs: must start with '/', no '//', no '\', no control characters,
 -- and not be a system control endpoint.
 local function is_valid_return_to(url)
     if not url or type(url) ~= "string" then return false end
     if url == "/" then return true end
     if not url:find("^/") then return false end
-    if url:find("//") or url:find("\\") then return false end
+    if url:sub(1, 2) == "//" then return false end
+    if url:find("\\", 1, true) then return false end
     if url:find("[%z-\x1f\x7f]") then return false end
 
+    local path_without_query = url:match("^([^?]*)")
     local forbidden = { "/consent", "/consent/callback", "/redirect_uri" }
     for _, path in ipairs(forbidden) do
-        if url == path then return false end
+        if path_without_query == path then return false end
     end
     return true
 end
 
+
 function _M.check_consent()
-    local sess = session.new()
+    local sess, err, exists = session.open()
+
     if not sess then
-        ngx.log(ngx.ERR, "Failed to initialize session in check_consent")
-        return
+        ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
 
+    local consent_given = sess:get("consent_given")
+    local consent_at = sess:get("consent_at")
     local now = ngx.time()
-    local consent_given = sess.data.consent_given
-    local consent_at = sess.data.consent_at or 0
 
-    -- Consent is valid if given and not older than 86400 seconds (24 hours)
-    if not consent_given or (now - consent_at > 86400) then
-        local return_to = ngx.var.request_uri or "/"
-        local query = ngx.encode_args({ return_to = return_to })
-        ngx.redirect("/consent?" .. query)
-        return
+    local consent_valid =
+        exists
+        and consent_given == true
+        and type(consent_at) == "number"
+        and now - consent_at <= CONSENT_TTL
+
+    if consent_valid then
+        return true
     end
+
+    local return_to = ngx.var.request_uri or "/"
+    local query = ngx.encode_args({ return_to = return_to })
+    ngx.redirect("/consent?" .. query, ngx.HTTP_FOUND) -- 302 Found
 end
 
+
 function _M.render_consent_page()
-    local sess = session.new()
+    if ngx.req.get_method() ~= "GET" then
+        return ngx.exit(ngx.HTTP_NOT_ALLOWED)
+    end
+
+    -- Read and validate return_to BEFORE storing it.
     local args = ngx.req.get_uri_args()
     local return_to = args["return_to"]
 
     if not is_valid_return_to(return_to) then
-        return_to = "/"
+        return ngx.exit(ngx.HTTP_BAD_REQUEST)
     end
 
-    sess.data.showing_consent = true
-    sess.data.consent_return_to = return_to
-    sess:commit()
+    local sess, err = session.start()
+
+    if not sess then
+        ngx.log(ngx.ERR, "Failed to start session: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+
+    sess:set("showing_consent", true)
+    sess:set("consent_return_to", return_to)
+
+    local ok, save_err = sess:save()
+    if not ok then
+        ngx.log(ngx.ERR, "Failed to save session: ", save_err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
 
     ngx.header.content_type = "text/html; charset=utf-8"
     ngx.say([[
@@ -79,27 +108,39 @@ function _M.render_consent_page()
     ]])
 end
 
-function _M.handle_consent_post()
-    local sess = session.new()
 
-    if not sess.data.showing_consent then
-        ngx.status = ngx.HTTP_FORBIDDEN
-        ngx.say("Forbidden: No consent flow active")
-        ngx.exit(ngx.HTTP_FORBIDDEN)
+function _M.handle_consent_post()
+    local sess, err, exists = session.start()
+
+    if not sess then
+        ngx.log(ngx.ERR, "Starting session failed: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
 
-    sess.data.consent_given = true
-    sess.data.consent_at = ngx.time()
+    if not exists or sess:get("showing_consent") ~= true then
+        ngx.status = ngx.HTTP_FORBIDDEN
+        ngx.say("Forbidden: No consent flow active")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
 
-    local return_to = sess.data.consent_return_to or "/"
+    local return_to = sess:get("consent_return_to")
+        if not is_valid_return_to(return_to) then
+            return ngx.exit(ngx.HTTP_BAD_REQUEST)
+        end
 
-    -- Cleanup temporary flow data
-    sess.data.showing_consent = nil
-    sess.data.consent_return_to = nil
-    sess:commit()
+    sess:set("consent_given", true)
+    sess:set("consent_at", ngx.time())2
+    sess:set("showing_consent", nil)
+    sess:set("consent_return_to", nil)
 
-    ngx.redirect(return_to, ngx.HTTP_SEE_OTHER) -- 303 See Other
-    return
+    local ok, save_err = sess:save()
+
+        if not ok then
+            ngx.log(ngx.ERR, "Failed to save consent: ", save_err or "unknown")
+            return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+        end
+
+    return ngx.redirect(return_to, ngx.HTTP_SEE_OTHER) -- 303 See Other
 end
 
 return _M
