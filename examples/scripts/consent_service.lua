@@ -26,6 +26,23 @@ end
 function _M.check_consent()
     local sess, err, exists = session.open()
 
+    ngx.log(
+    ngx.ERR,
+    "CONSENT CHECK: sess=",
+    tostring(sess),
+    " exists=",
+    tostring(exists),
+    " err=",
+    tostring(err)
+    )
+    ngx.log(
+        ngx.ERR,
+        "CONSENT VALUES: given=",
+        tostring(consent_given),
+        " at=",
+        tostring(consent_at)
+    )
+
     if not sess then
         ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
         return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
@@ -33,13 +50,12 @@ function _M.check_consent()
 
     local consent_given = sess:get("consent_given")
     local consent_at = sess:get("consent_at")
-    local now = ngx.time()
 
     local consent_valid =
         exists
         and consent_given == true
         and type(consent_at) == "number"
-        and now - consent_at <= CONSENT_TTL
+        and ngx.time() - consent_at <= CONSENT_TTL
 
     if consent_valid then
         return true
@@ -47,7 +63,7 @@ function _M.check_consent()
 
     local return_to = ngx.var.request_uri or "/"
     local query = ngx.encode_args({ return_to = return_to })
-    ngx.redirect("/consent?" .. query, ngx.HTTP_FOUND) -- 302 Found
+    return ngx.redirect("/consent?" .. query, ngx.HTTP_FOUND) -- 302 Found
 end
 
 
@@ -129,7 +145,7 @@ function _M.handle_consent_post()
         end
 
     sess:set("consent_given", true)
-    sess:set("consent_at", ngx.time())2
+    sess:set("consent_at", ngx.time())
     sess:set("showing_consent", nil)
     sess:set("consent_return_to", nil)
 
