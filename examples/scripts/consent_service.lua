@@ -25,15 +25,16 @@ function _M.check_consent()
         return
     end
 
-    local now = os.time()
+    local now = ngx.time()
     local consent_given = sess.data.consent_given
     local consent_at = sess.data.consent_at or 0
 
     -- Consent is valid if given and not older than 86400 seconds (24 hours)
     if not consent_given or (now - consent_at > 86400) then
         local return_to = ngx.var.request_uri or "/"
-        ngx.redirect("/consent?return_to=" .. ngx.escape_uri(return_to), true)
-        ngx.exit(ngx.HTTP_MOVED_TEMPORARILY)
+        local query = ngx.encode_args({ return_to = return_to })
+        ngx.redirect("/consent?" .. query)
+        return
     end
 end
 
@@ -88,7 +89,7 @@ function _M.handle_consent_post()
     end
 
     sess.data.consent_given = true
-    sess.data.consent_at = os.time()
+    sess.data.consent_at = ngx.time()
 
     local return_to = sess.data.consent_return_to or "/"
 
@@ -97,8 +98,8 @@ function _M.handle_consent_post()
     sess.data.consent_return_to = nil
     sess:commit()
 
-    ngx.redirect(return_to, true) -- 303 See Other
-    ngx.exit(ngx.HTTP_SEE_OTHER)
+    ngx.redirect(return_to, ngx.HTTP_SEE_OTHER) -- 303 See Other
+    return
 end
 
 return _M
