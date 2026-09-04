@@ -35,9 +35,11 @@ jobs:
           push: true
           tags: oci.bi.denbi.de/simplevm/forc:${{ steps.get_version.outputs.VERSION }}
           load: true
+     - name: Install unzip
+       run: sudo apt-get update && sudo apt-get install -y unzip
      - name: Generate SBOM
        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
        with:
           image: oci.bi.denbi.de/simplevm/forc:${{ steps.get_version.outputs.VERSION }}
           format: spdx-json
-          output-file: oci.bi.denbi.de/simplevm/forc:${{ steps.get_version.outputs.VERSION }}
+          output-file: ${{ github.event.repository.name }}-sbom-${{ steps.get_version.outputs.VERSION }}.spdx.json
