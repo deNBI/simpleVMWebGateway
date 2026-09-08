@@ -27,14 +27,29 @@ function _M.check_consent()
     local sess, err, exists = session.open()
 
     ngx.log(
-    ngx.ERR,
-    "CONSENT CHECK: sess=",
-    tostring(sess),
-    " exists=",
-    tostring(exists),
-    " err=",
-    tostring(err)
+        ngx.ERR,
+        "CONSENT CHECK: sess=",
+        tostring(sess),
+        " exists=",
+        tostring(exists),
+        " err=",
+        tostring(err)
     )
+    
+    if not exists then
+        local return_to = ngx.var.request_uri or "/"
+        local query = ngx.encode_args({ return_to = return_to })
+        return ngx.redirect("/consent?" .. query, 302)
+    end
+    
+    if not sess then
+        ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+    
+    local consent_given = sess:get("consent_given")
+    local consent_at = sess:get("consent_at")
+
     ngx.log(
         ngx.ERR,
         "CONSENT VALUES: given=",
@@ -42,14 +57,6 @@ function _M.check_consent()
         " at=",
         tostring(consent_at)
     )
-
-    if not sess then
-        ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
-        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
-    end
-
-    local consent_given = sess:get("consent_given")
-    local consent_at = sess:get("consent_at")
 
     local consent_valid =
         exists
@@ -63,7 +70,7 @@ function _M.check_consent()
 
     local return_to = ngx.var.request_uri or "/"
     local query = ngx.encode_args({ return_to = return_to })
-    return ngx.redirect("/consent?" .. query, ngx.HTTP_FOUND) -- 302 Found
+    return ngx.redirect("/consent?" .. query, 302)
 end
 
 
