@@ -36,12 +36,6 @@
         "pin"
       ],
       "enabled": false
-    },
-    {
-      "matchLabels": [
-        "security"
-      ],
-      "minimumReleaseAge": null
     }
   ],
   "osvVulnerabilityAlerts": true,
