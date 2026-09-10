@@ -2,6 +2,7 @@ services:
   forc:
     image: forc
     container_name: forc
+    restart: always
     env_file:
       - ../FastapiOpenRestyConfigurator/.env  # envs for openresty
     volumes:
