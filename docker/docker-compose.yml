@@ -1,6 +1,6 @@
 services:
   forc:
-    image: forc
+    image: oci.bi.denbi.de/simplevm/forc:dev
     container_name: forc
     restart: always
     env_file:
@@ -10,6 +10,8 @@ services:
       #- /var/forc/template_path/:/var/forc/template_path/:rw  # optional default has the exmaples/templates
       - /etc/letsencrypt/:/etc/letsencrypt/:r  #needs to provided for cert
       - .env.forc:/opt/simpleVMWebGateway/FastapiOpenRestyConfigurator/.env  # needs to be mounted for roc
+      - ../examples/scripts/:/var/forc/backend_path/scripts/:r
+      - ../examples/templates/:/var/forc/template_path/:r
     ports:
       - 0.0.0.0:5000:5000
       - 0.0.0.0:80:80
