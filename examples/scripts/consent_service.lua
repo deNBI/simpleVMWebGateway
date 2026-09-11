@@ -22,8 +22,15 @@ local function is_valid_return_to(url)
     return true
 end
 
+local function is_valid_service(key_url, return_to)
+    if type(key_url) ~= "string" then return false end
+    if type(return_to) ~= "string" then return false end
+    local service_path = "/" .. key_url .. "/"
+    return return_to:sub(1, #service_path) == service_path
+end
 
-function _M.check_consent()
+
+function _M.check_consent(key_url)
     local sess, err, exists = session.open()
 
     ngx.log(
@@ -35,33 +42,25 @@ function _M.check_consent()
         " err=",
         tostring(err)
     )
-    
-    if not exists then
-        local return_to = ngx.var.request_uri or "/"
-        local query = ngx.encode_args({ return_to = return_to })
-        return ngx.redirect("/consent?" .. query, 302)
-    end
-    
+
     if not sess then
         ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
         return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
     end
-    
-    local consent_given = sess:get("consent_given")
-    local consent_at = sess:get("consent_at")
+
+    local consent_key = "consent:" .. key_url
+    local consent_at = exists and sess:get(consent_key) or nil
 
     ngx.log(
         ngx.ERR,
         "CONSENT VALUES: given=",
-        tostring(consent_given),
+        tostring(consent_key),
         " at=",
         tostring(consent_at)
     )
 
     local consent_valid =
-        exists
-        and consent_given == true
-        and type(consent_at) == "number"
+        type(consent_at) == "number"
         and ngx.time() - consent_at <= CONSENT_TTL
 
     if consent_valid then
@@ -69,7 +68,10 @@ function _M.check_consent()
     end
 
     local return_to = ngx.var.request_uri or "/"
-    local query = ngx.encode_args({ return_to = return_to })
+    local query = ngx.encode_args({
+        return_to = return_to,
+        key_url = key_url
+    })
     return ngx.redirect("/consent?" .. query, 302)
 end
 
@@ -82,8 +84,9 @@ function _M.render_consent_page()
     -- Read and validate return_to BEFORE storing it.
     local args = ngx.req.get_uri_args()
     local return_to = args["return_to"]
+    local key_url = args["key_url"]
 
-    if not is_valid_return_to(return_to) then
+    if not is_valid_return_to(return_to) or not is_valid_service(key_url, return_to) then
         return ngx.exit(ngx.HTTP_BAD_REQUEST)
     end
 
@@ -96,6 +99,7 @@ function _M.render_consent_page()
 
     sess:set("showing_consent", true)
     sess:set("consent_return_to", return_to)
+    sess:set("consent_key_url", key_url)
 
     local ok, save_err = sess:save()
     if not ok then
@@ -147,14 +151,20 @@ function _M.handle_consent_post()
     end
 
     local return_to = sess:get("consent_return_to")
-        if not is_valid_return_to(return_to) then
-            return ngx.exit(ngx.HTTP_BAD_REQUEST)
-        end
+    local key_url = sess:get("consent_key_url")
+    if not is_valid_return_to(return_to) then
+        return ngx.exit(ngx.HTTP_BAD_REQUEST)
+    end
+    if not is_valid_service(key_url, return_to) then
+        return ngx.exit(ngx.HTTP_BAD_REQUEST)
+    end
 
-    sess:set("consent_given", true)
-    sess:set("consent_at", ngx.time())
+    local consent_key = "consent:" .. key_url
+    sess:set(consent_key, ngx.time())
+
     sess:set("showing_consent", nil)
     sess:set("consent_return_to", nil)
+    sess:set("consent_key_url", nil)
 
     local ok, save_err = sess:save()
 
