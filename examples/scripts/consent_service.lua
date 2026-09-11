@@ -1,4 +1,5 @@
 local session = require("resty.session")
+local consent_page = require("consent_page")
 
 local _M = {}
 
@@ -48,12 +49,6 @@ function _M.check_consent(key_url)
         tostring(err)
     )
 
-    if not exists then
-        local return_to = ngx.var.request_uri or "/"
-        local query = ngx.encode_args({ return_to = return_to })
-        return ngx.redirect("/consent?" .. query, 302)
-    end
-
     if not sess then
         ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
         return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
@@ -93,7 +88,7 @@ function _M.render_consent_page()
         return ngx.exit(ngx.HTTP_NOT_ALLOWED)
     end
 
-    -- Read and validate return_to BEFORE storing it.
+    -- Read and validate return_to before storing it.
     local args = ngx.req.get_uri_args()
     local return_to = args["return_to"]
     local key_url = args["key_url"]
@@ -122,31 +117,7 @@ function _M.render_consent_page()
     end
 
     ngx.header.content_type = "text/html; charset=utf-8"
-    ngx.say([[
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Consent Required</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f4f4f9; }
-        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; text-align: center; }
-        h1 { color: #333; }
-        p { color: #666; line-height: 1.5; margin-bottom: 2rem; }
-        .btn { background: #007bff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-        .btn:hover { background: #0056b3; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>Terms of Service</h1>
-        <p>By proceeding, you agree to our terms of service and privacy policy. You acknowledge that your identity will be verified via OIDC.</p>
-        <form method="POST" action="/consent/callback">
-            <button type="submit" class="btn">I Agree & Continue</button>
-        </form>
-    </div>
-</body>
-</html>
-    ]])
+    ngx.say(consent_page.render())
 end
 
 
