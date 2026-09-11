@@ -7,6 +7,7 @@ local CONSENT_TTL = 86400
 -- Valid return_to URLs: must start with '/', no '//', no '\', no control characters,
 -- and not be a system control endpoint.
 local function is_valid_return_to(url)
+    ngx.log(ngx.DEBUG, "Validating return_to URL: ", url)
     if not url or type(url) ~= "string" then return false end
     if url == "/" then return true end
     if not url:find("^/") then return false end
@@ -19,18 +20,22 @@ local function is_valid_return_to(url)
     for _, path in ipairs(forbidden) do
         if path_without_query == path then return false end
     end
+    ngx.log(ngx.DEBUG, "Valid return_to URL: ", url)
     return true
 end
 
 local function is_valid_service(key_url, return_to)
+    ngx.log(ngx.DEBUG, "Validating service: key_url=", key_url, " return_to=", return_to)
     if type(key_url) ~= "string" then return false end
     if type(return_to) ~= "string" then return false end
     local service_path = "/" .. key_url .. "/"
+    ngx.log(ngx.DEBUG, "Validating service: service_path=", service_path)
     return return_to:sub(1, #service_path) == service_path
 end
 
 
 function _M.check_consent(key_url)
+    ngx.log(ngx.DEBUG, "Checking consent for key_url: ", key_url)
     local sess, err, exists = session.open()
 
     ngx.log(
@@ -42,6 +47,12 @@ function _M.check_consent(key_url)
         " err=",
         tostring(err)
     )
+
+    if not exists then
+        local return_to = ngx.var.request_uri or "/"
+        local query = ngx.encode_args({ return_to = return_to })
+        return ngx.redirect("/consent?" .. query, 302)
+    end
 
     if not sess then
         ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
@@ -77,6 +88,7 @@ end
 
 
 function _M.render_consent_page()
+    ngx.log(ngx.DEBUG, "Rendering consent page")
     if ngx.req.get_method() ~= "GET" then
         return ngx.exit(ngx.HTTP_NOT_ALLOWED)
     end
@@ -85,6 +97,8 @@ function _M.render_consent_page()
     local args = ngx.req.get_uri_args()
     local return_to = args["return_to"]
     local key_url = args["key_url"]
+
+    ngx.log(ngx.DEBUG, "Validating: return_to=" .. return_to .. " | key_url=" .. key_url)
 
     if not is_valid_return_to(return_to) or not is_valid_service(key_url, return_to) then
         return ngx.exit(ngx.HTTP_BAD_REQUEST)
@@ -137,6 +151,7 @@ end
 
 
 function _M.handle_consent_post()
+    ngx.log(ngx.DEBUG, "Handling consent POST")
     local sess, err, exists = session.start()
 
     if not sess then
