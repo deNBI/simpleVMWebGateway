@@ -66,7 +66,7 @@ COPY docker/html /usr/local/openresty/nginx/html
 RUN mkdir -p ${FORC_BACKEND_PATH} ${FORC_TEMPLATE_PATH} /opt/scripts \
     && chmod +x launch.sh /opt/scripts/generate_ip_blocklists.sh
 COPY examples/templates  ${FORC_TEMPLATE_PATH}
-COPY examples/scripts  ${FORC_BACKEND_PATH}/scripts
+COPY examples/scripts  /var/forc/scripts/
 
 EXPOSE 5000
 CMD ["./launch.sh"]
