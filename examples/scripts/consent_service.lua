@@ -1,0 +1,165 @@
+local session = require("resty.session")
+local consent_page = require("consent_page")
+
+local _M = {}
+
+local CONSENT_TTL = 86400
+
+-- Valid return_to URLs: must start with '/', no '//', no '\', no control characters,
+-- and not be a system control endpoint.
+local function is_valid_return_to(url)
+    ngx.log(ngx.DEBUG, "Validating return_to URL: ", url)
+    if not url or type(url) ~= "string" then return false end
+    if url == "/" then return true end
+    if not url:find("^/") then return false end
+    if url:sub(1, 2) == "//" then return false end
+    if url:find("\\", 1, true) then return false end
+    if url:find("[%z-\x1f\x7f]") then return false end
+
+    local path_without_query = url:match("^([^?]*)")
+    local forbidden = { "/consent", "/consent/callback", "/redirect_uri" }
+    for _, path in ipairs(forbidden) do
+        if path_without_query == path then return false end
+    end
+    ngx.log(ngx.DEBUG, "Valid return_to URL: ", url)
+    return true
+end
+
+local function is_valid_service(key_url, return_to)
+    ngx.log(ngx.DEBUG, "Validating service: key_url=", key_url, " return_to=", return_to)
+    if type(key_url) ~= "string" then return false end
+    if type(return_to) ~= "string" then return false end
+    local service_path = "/" .. key_url .. "/"
+    ngx.log(ngx.DEBUG, "Validating service: service_path=", service_path)
+    return return_to:sub(1, #service_path) == service_path
+end
+
+
+function _M.check_consent(key_url)
+    ngx.log(ngx.DEBUG, "Checking consent for key_url: ", key_url)
+    local sess, err, exists = session.open()
+
+    ngx.log(
+        ngx.ERR,
+        "CONSENT CHECK: sess=",
+        tostring(sess),
+        " exists=",
+        tostring(exists),
+        " err=",
+        tostring(err)
+    )
+
+    if not sess then
+        ngx.log(ngx.ERR, "Failed to initialize session: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+
+    local consent_key = "consent:" .. key_url
+    local consent_at = exists and sess:get(consent_key) or nil
+
+    ngx.log(
+        ngx.ERR,
+        "CONSENT VALUES: given=",
+        tostring(consent_key),
+        " at=",
+        tostring(consent_at)
+    )
+
+    local consent_valid =
+        type(consent_at) == "number"
+        and ngx.time() - consent_at <= CONSENT_TTL
+
+    if consent_valid then
+        return true
+    end
+
+    local return_to = ngx.var.request_uri or "/"
+    local query = ngx.encode_args({
+        return_to = return_to,
+        key_url = key_url
+    })
+    return ngx.redirect("/consent?" .. query, 302)
+end
+
+
+function _M.render_consent_page()
+    ngx.log(ngx.DEBUG, "Rendering consent page")
+    if ngx.req.get_method() ~= "GET" then
+        return ngx.exit(ngx.HTTP_NOT_ALLOWED)
+    end
+
+    -- Read and validate return_to before storing it.
+    local args = ngx.req.get_uri_args()
+    local return_to = args["return_to"]
+    local key_url = args["key_url"]
+
+    ngx.log(ngx.DEBUG, "Validating: return_to=" .. return_to .. " | key_url=" .. key_url)
+
+    if not is_valid_return_to(return_to) or not is_valid_service(key_url, return_to) then
+        return ngx.exit(ngx.HTTP_BAD_REQUEST)
+    end
+
+    local sess, err = session.start()
+
+    if not sess then
+        ngx.log(ngx.ERR, "Failed to start session: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+
+    sess:set("showing_consent", true)
+    sess:set("consent_return_to", return_to)
+    sess:set("consent_key_url", key_url)
+
+    local ok, save_err = sess:save()
+    if not ok then
+        ngx.log(ngx.ERR, "Failed to save session: ", save_err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+
+    ngx.header.content_type = "text/html; charset=utf-8"
+    ngx.say(consent_page.render())
+end
+
+
+function _M.handle_consent_post()
+    ngx.log(ngx.DEBUG, "Handling consent POST")
+    local sess, err, exists = session.start()
+
+    if not sess then
+        ngx.log(ngx.ERR, "Starting session failed: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    end
+
+    if not exists or sess:get("showing_consent") ~= true then
+        ngx.status = ngx.HTTP_FORBIDDEN
+        ngx.say("Forbidden: No consent flow active")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    local return_to = sess:get("consent_return_to")
+    local key_url = sess:get("consent_key_url")
+    if not is_valid_return_to(return_to) then
+        return ngx.exit(ngx.HTTP_BAD_REQUEST)
+    end
+    if not is_valid_service(key_url, return_to) then
+        return ngx.exit(ngx.HTTP_BAD_REQUEST)
+    end
+
+    local consent_key = "consent:" .. key_url
+    sess:set(consent_key, ngx.time())
+
+    sess:set("showing_consent", nil)
+    sess:set("consent_return_to", nil)
+    sess:set("consent_key_url", nil)
+
+    local ok, save_err = sess:save()
+
+        if not ok then
+            ngx.log(ngx.ERR, "Failed to save consent: ", save_err or "unknown")
+            return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+        end
+
+    return ngx.redirect(return_to, ngx.HTTP_SEE_OTHER) -- 303 See Other
+end
+
+return _M
