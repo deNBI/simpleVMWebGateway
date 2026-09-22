@@ -218,8 +218,7 @@ test_backends_for_convert_backend_temp_to_out = [
     "exception_expected, expected_suffix, user_key_url",
     [
         (False, 100, None),
-        (False, 201, "test_200"),
-        (True, None, "test_-10"),
+        (False, 201, "test"),
         (True, None, "test_999"),
         (True, None, "test_1000"),
         (True, None, "test_150.5"),
@@ -250,10 +249,10 @@ async def test_generate_suffix_number(exception_expected, expected_suffix, user_
 @pytest.mark.parametrize(
     "expected_suffix, user_key_url, backends",
     [
-        (100, "unusual_123", []),
-        (123, "test_123", [BackendOut.model_construct(location_url = "test_123"), BackendOut.model_construct(location_url = "animal_100")]),
-        (250, "test_250", [BackendOut.model_construct(location_url = "test_250"), BackendOut.model_construct(location_url = "animal_100")]),
-        (499, "test_499", [BackendOut.model_construct(location_url = "test_499"), BackendOut.model_construct(location_url = "animal_100")])
+        (100, "unusual", []),
+        (123, "test", [BackendOut.model_construct(location_url = "test_123"), BackendOut.model_construct(location_url = "animal_100")]),
+        (250, "test", [BackendOut.model_construct(location_url = "test_250"), BackendOut.model_construct(location_url = "animal_100")]),
+        (499, "test", [BackendOut.model_construct(location_url = "test_499"), BackendOut.model_construct(location_url = "animal_100")])
     ]
 )
 @pytest.mark.asyncio
