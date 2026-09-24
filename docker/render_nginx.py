@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
-TEMPLATE_DIR = "/etc/openresty/"
-OUTPUT_FILE = "/etc/openresty/nginx.conf"
+TEMPLATE_DIR = os.environ.get("RENDER_NGINX_TEMPLATE_DIR", "/etc/openresty/")
+OUTPUT_FILE = os.environ.get("RENDER_NGINX_OUTPUT_FILE", "/etc/openresty/nginx.conf")
 
 
 def str_to_bool(v):

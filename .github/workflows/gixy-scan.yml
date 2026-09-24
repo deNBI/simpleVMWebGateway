@@ -1,0 +1,50 @@
+name: Gixy-Next Scan
+
+on:
+  pull_request:
+
+jobs:
+  gixy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install jinja2 gixy-next
+
+      - name: Render Nginx Config
+        run: |
+          # Create temporary directories for rendering within the workspace to avoid permission issues
+          mkdir -p ./render_tmp/template
+          # Copy the template to the temporary directory
+          cp docker/nginx.conf ./render_tmp/template/nginx.conf.j2
+
+          # Set required dummy environment variables for rendering
+          export RENDER_NGINX_TEMPLATE_DIR="./render_tmp/template/"
+          export RENDER_NGINX_OUTPUT_FILE="./render_tmp/nginx.conf"
+          export OPENRESTY_WORKER_PROCESSES="auto"
+          export OPENRESTY_WORKER_RLIMIT_NOFILE="65535"
+          export OPENRESTY_WORKER_CONNECTIONS="1024"
+          export OPENRESTY_DNS_SERVER="127.0.0.11"
+          export FORC_SECRET_KEY="dummy-secret"
+          export DOMAIN="example.com"
+          export FORC_OIDC_DISCOVERY_URL="https://example.com/.well-known/openid-configuration"
+          export FORC_OIDC_CLIENT_ID="dummy-id"
+          export FORC_OIDC_CLIENT_SECRET="dummy-secret"
+          export FORC_SERVICE_USE_HTTPS="true"
+          export FORC_SERVICE_PORT="8443"
+          export FORC_LOCAL_IP="127.0.0.1"
+          export FORC_BACKEND_PATH="./render_tmp/backends"
+          mkdir -p ./render_tmp/backends
+
+          # Run the rendering script
+          python3 docker/render_nginx.py
+
+      - name: Run Gixy-Next scan
+        run: gixy ./render_tmp/nginx.conf
