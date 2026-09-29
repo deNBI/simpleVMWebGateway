@@ -34,24 +34,19 @@ def random_with_n_digits(n):
 
 
 # TODO: unlikely but potential error cause, if two users have same randomly generated user_key_url!
-async def generate_suffix_number(location_url: str | None = None) -> int:
-    if location_url is None:
+async def generate_suffix_number(user_key_url: str | None = None) -> int:
+    if user_key_url is None:
         return 100
-    # extract current suffix number, check validity
-    current_suffix_number: int = int(location_url.split("_")[1])
-    if current_suffix_number < 100 or current_suffix_number > 999:
-        logger.error(sanitize_log("Invalid user_key_url provided for suffix generation: " + location_url))
-        raise InternalServerError("Invalid user_key_url provided for suffix generation.")
 
     # determine suffix number
-    highest_id = await get_highest_suffix_number(location_url)
+    highest_id = await get_highest_suffix_number(user_key_url)
 
     if highest_id == 999:
-        logger.warning(sanitize_log("Reached max index number for requested user_key_url: " + location_url))
+        logger.warning(sanitize_log("Reached max index number for requested user_key_url: " + user_key_url))
         raise InternalServerError("Reached max index number for requested user_key_url (limit=999).")
     return highest_id + 1
 
-async def get_highest_suffix_number(location_url: str) -> int:
+async def get_highest_suffix_number(user_key_url: str) -> int:
     """
     Looks for backends with same user_key_url and returns the highest suffix number. See generate_suffix_number().
     """
@@ -59,13 +54,17 @@ async def get_highest_suffix_number(location_url: str) -> int:
     backends: List[BackendOut] = await get_backends()
     same_name_backend_suffixes: List[int] = []
     for backend in backends:
-        if backend.location_url == location_url:
-            suffix: int = int(backend.location_url.split("_")[1])
-            same_name_backend_suffixes.append(suffix)
+        if backend.location_url and backend.location_url.startswith(user_key_url + "_"):
+            try:
+                suffix: int = int(backend.location_url.split("_")[-1])
+                same_name_backend_suffixes.append(suffix)
+            except (ValueError, IndexError):
+                logger.debug(sanitize_log(f"Could not extract suffix from location_url: {backend.location_url}"))
+                continue
     if len(same_name_backend_suffixes) == 0:
-        return 100
+        return 99
 
-    # return highest found suffix number + 1 to iterate
+    # return highest found suffix number to iterate
     same_name_backend_suffixes.sort()
     highest_id: int = same_name_backend_suffixes[-1]
     return highest_id
@@ -308,7 +307,7 @@ async def set_backend_id_and_suffix(backend: BackendTemp, **kwargs) -> tuple[Bac
             logger.warning(sanitize_log(f"set_backend_id_and_suffix() received unexpected kwargs: {kwargs}"))
             raise InternalServerError("Unexpected kwargs provided to set_backend_id_and_suffix().") # @reviewer: should we really error here?
         backend = backend.model_copy(update={'id': str(random_with_n_digits(10))})
-        suffix_number = await generate_suffix_number(backend.location_url)
+        suffix_number = await generate_suffix_number(backend.user_key_url)
     return backend, suffix_number
 
 
