@@ -19,7 +19,7 @@ def main():
     sanitized_id = re.sub(r'[^a-zA-Z0-9_-]', '_', backend_id)
 
     # Generate a default location_url based on the sanitized_id if not provided
-    location_url = args.location_url or f"http://127.0.0.1:8080/{sanitized_id}"
+    location_url = args.location_url or f"http://127.0.0.1:8080"
 
     # Dummy variables for security scanning purposes
     dummy_vars = {
