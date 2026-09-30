@@ -1,6 +1,6 @@
 fastapi==0.141.1
 uvicorn==0.54.0
-werkzeug==3.1.8
+werkzeug==3.1.9
 Jinja2==3.1.6
 python-dotenv==1.2.3
 gunicorn==26.2.0
