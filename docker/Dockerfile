@@ -43,6 +43,9 @@ RUN apk add --no-cache \
     ca-certificates \
     python3
 
+
+RUN apk update && apk upgrade --no-cache
+
 # Path Mapping: Link /etc/openresty to the default OpenResty config directory
 # This maintains compatibility with render_nginx.py and scripts
 RUN ln -snf /usr/local/openresty/nginx/conf /etc/openresty
