@@ -1,4 +1,4 @@
-fastapi==0.143.0
+fastapi==0.162.0
 uvicorn==0.54.0
 werkzeug==3.1.9
 Jinja2==3.1.6
@@ -7,5 +7,5 @@ gunicorn==26.2.0
 pydantic-settings
 factory-boy==3.3.3
 # testing
-pytest==9.1.1
-pytest-asyncio==1.4.0
+pytest==9.2.0
+pytest-asyncio==1.4.1
