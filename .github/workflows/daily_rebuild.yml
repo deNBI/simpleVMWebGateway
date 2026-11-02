@@ -1,0 +1,19 @@
+name: Daily Rebuild and Scan
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  rebuild_and_scan:
+    uses: denbi/portal-github-actions/.github/workflows/release-image.yml@main
+    with:
+      image_name: oci.bi.denbi.de/simplevm/forc
+      dockerfile: docker/Dockerfile
+      notify_matrix: true
+    secrets:
+      OCI_USERNAME: ${{ secrets.OCI_USERNAME }}
+      OCI_TOKEN: ${{ secrets.OCI_TOKEN }}
+      CUSTOM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+      MATRIX_ROOM: ${{ secrets.MATRIX_CRITICAL_ROOM }}
