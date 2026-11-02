@@ -11,7 +11,8 @@ jobs:
       image_name: oci.bi.denbi.de/simplevm/forc
       dockerfile: docker/Dockerfile
       notify_matrix: true
-      
+      RUNS_ON: '["ubuntu-latest"]'
+
     secrets:
       OCI_USERNAME: ${{ secrets.OCI_USERNAME }}
       OCI_TOKEN: ${{ secrets.OCI_TOKEN }}
