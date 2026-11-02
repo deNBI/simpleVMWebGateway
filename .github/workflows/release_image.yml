@@ -4,29 +4,18 @@ on:
     tags:
       - '*'
 jobs:
-  build_release:
-    runs-on: ubuntu-latest
+  release:
+    uses: denbi/portal-github-actions/.github/workflows/release-image.yml@main
+    with:
+      image_name: oci.bi.denbi.de/simplevm/forc
+      dockerfile: docker/Dockerfile
+      notify_matrix: true
+      image_tag: ${{ github.ref_name }}
+      RUNS_ON: '["ubuntu-latest"]'
 
-    steps:
-     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-     - name: Build and Scan Image
-       uses: denbi/portal-github-actions/build-and-scan-image@main
-       with:
-         image: oci.bi.denbi.de/simplevm/forc:${{ github.ref_name }}
-         dockerfile: docker/Dockerfile
-         username: ${{ secrets.OCI_USERNAME }}
-         password: ${{ secrets.OCI_TOKEN }}
-         notify_matrix: true
-
-     - name: Publish Image
-       uses: denbi/portal-github-actions/publish-image@main
-       with:
-         image: oci.bi.denbi.de/simplevm/forc:${{ github.ref_name }}
-         sbom_filename: ${{ github.event.repository.name }}-sbom-${{ github.ref_name }}.spdx.json
-
-     - name: Cleanup Local Image
-       if: always()
-       uses: denbi/portal-github-actions/cleanup-image@main
-       with:
-         image: oci.bi.denbi.de/simplevm/forc:${{ github.ref_name }}
+    secrets:
+      OCI_USERNAME: ${{ secrets.OCI_USERNAME }}
+      OCI_TOKEN: ${{ secrets.OCI_TOKEN }}
+      CUSTOM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+      MATRIX_ROOM: ${{ secrets.MATRIX_CRITICAL_ROOM }}
