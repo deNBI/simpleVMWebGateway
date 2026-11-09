@@ -6,7 +6,7 @@ on:
 
 jobs:
   rebuild_and_scan:
-    uses: denbi/portal-github-actions/.github/workflows/release-image.yml@main
+    uses: denbi/portal-github-actions/.github/workflows/release-image.yml@944ddd131cde0fcc9e340918516571d27e08be55 # main
     with:
       image_name: oci.bi.denbi.de/simplevm/forc
       dockerfile: docker/Dockerfile
