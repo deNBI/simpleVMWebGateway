@@ -15,7 +15,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Run Python Audit
-        uses: denbi/portal-github-actions/python-audit@944ddd131cde0fcc9e340918516571d27e08be55 # main
+        uses: denbi/portal-github-actions/python-audit@b1a0d8432e7498518ab03848cbbb976f5b64b186 # main
         with:
           python_version: '3.14'
           requirements_files: 'FastapiOpenRestyConfigurator/requirements.txt'
