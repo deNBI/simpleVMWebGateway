@@ -1,5 +1,5 @@
 # --- Build Stage ---
-FROM openresty/openresty:1.31.8.1-alpine-slim@sha256:ff857feb5c15c29a1a4c1e5be326f65c29ac54c3ba5e01d69ad5a310081b19c2 AS build-stage
+FROM openresty/openresty:1.31-alpine-slim@sha256:ff857feb5c15c29a1a4c1e5be326f65c29ac54c3ba5e01d69ad5a310081b19c2 AS build-stage
 
 # Install build-time dependencies
 RUN apk add --no-cache \
@@ -26,7 +26,7 @@ RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install gunicorn uvicorn
 
 # --- Runtime Stage ---
-FROM openresty/openresty:1.31.8.1-alpine-slim@sha256:ff857feb5c15c29a1a4c1e5be326f65c29ac54c3ba5e01d69ad5a310081b19c2 AS runtime-stage
+FROM openresty/openresty:1.31-alpine-slim@sha256:ff857feb5c15c29a1a4c1e5be326f65c29ac54c3ba5e01d69ad5a310081b19c2 AS runtime-stage
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -39,10 +39,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN apk add --no-cache \
     bash \
     curl \
-    wget \
     ca-certificates \
     python3
-
 
 RUN apk update && apk upgrade --no-cache
 
