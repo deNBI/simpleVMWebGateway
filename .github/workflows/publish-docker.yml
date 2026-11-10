@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish:
-    uses: denbi/portal-github-actions/.github/workflows/publish-branch-image.yml@main
+    uses: denbi/portal-github-actions/.github/workflows/publish-branch-image.yml@b1a0d8432e7498518ab03848cbbb976f5b64b186 # main
     with:
       image_name: oci.bi.denbi.de/simplevm/forc
       dockerfile: docker/Dockerfile
