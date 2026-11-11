@@ -1,0 +1,23 @@
+name: Publish Docker (No Scan)
+# ⚠️ NO-SCAN BYPASS ⚠️
+# Sister of publish-docker.yml that SKIPS the image scan. Use this when the
+# scan would fail (image deemed "not safe") but you still need the branch
+# image in the registry to test it on staging. It builds and publishes the
+# same image:tag as the scanned flow, so it overwrites any previous image.
+#
+# Manual only (workflow_dispatch) - it does NOT run on push. Do not use this
+# for production releases; use publish-docker.yml / release_image.yml for those.
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: denbi/portal-github-actions/.github/workflows/publish-branch-image-no-scan.yml@02ae1f4 # main
+    with:
+      image_name: oci.bi.denbi.de/simplevm/forc
+      dockerfile: docker/Dockerfile
+      runs_on: '["ubuntu-latest"]'
+
+    secrets:
+      OCI_USERNAME: ${{ secrets.OCI_USERNAME }}
+      OCI_TOKEN: ${{ secrets.OCI_TOKEN }}
