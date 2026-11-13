@@ -3,7 +3,7 @@ uvicorn==0.54.0
 werkzeug==3.1.9
 Jinja2==3.1.6
 python-dotenv==1.2.4
-gunicorn==26.2.0
+gunicorn==27.0.0
 pydantic-settings
 factory-boy==3.3.3
 # testing
