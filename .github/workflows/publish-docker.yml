@@ -1,12 +1,31 @@
 name: Publish Docker
 on:
   workflow_dispatch:
+    inputs:
+      fail_on_findings:
+        description: 'Abort publish on scan findings (Tier 1/2)'
+        required: false
+        default: true
+        type: boolean
   push:
     branches:
       - 'staging'
       - 'dev'
       - 'hotfix/**'
 
+# Publishes the branch image. The scan always runs (report in step summary,
+# Matrix notify if enabled).
+#
+# fail_on_findings controls whether the publish is aborted on Tier 1/2
+# findings:
+#   - default true (strict): scan findings block the publish
+#   - set false: scan runs, findings are reported, but the publish continues
+#
+# When triggered manually via workflow_dispatch, you can override the
+# default (e.g. set fail_on_findings: false to publish despite findings).
+#
+# Do not use this for production releases - use release_image.yml for
+# those (which keeps the strict behavior).
 jobs:
   publish:
     uses: denbi/portal-github-actions/.github/workflows/publish-branch-image.yml@main
@@ -14,6 +33,7 @@ jobs:
       image_name: oci.bi.denbi.de/simplevm/forc
       dockerfile: docker/Dockerfile
       RUNS_ON: '["ubuntu-latest"]'
+      fail_on_findings: ${{ inputs.fail_on_findings }}
 
     secrets:
       OCI_USERNAME: ${{ secrets.OCI_USERNAME }}
