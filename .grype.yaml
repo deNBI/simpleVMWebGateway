@@ -1,0 +1,163 @@
+# Grype ignore configuration for simpleVMWebGateway (openresty/openresty:1.31-alpine-slim).
+#
+# Schema: grype 0.121 expects ignore rules as a top-level `ignore:` list where
+# each rule matches on `vulnerability:` (the CVE id) and optionally on
+# `package.name` / `package.type`. A match is suppressed only when ALL criteria
+# in a rule are met.
+#
+# --- OpenSSL 3.3.7-r2 (Alpine 3.21) ---
+#
+# All 13 OpenSSL CVEs from the 2026-09-29 advisory batch (and the earlier
+# CVE-2026-72897) affect ONLY the following branches:
+#   1.0.2, 1.1.1, 3.0  (older than 3.3)
+#   3.4, 3.5, 3.6, 4.0 (newer than 3.3; QUIC / DTLS-3.3 code lives there)
+#
+# OpenSSL 3.3.x is NOT in any of the affected version ranges. The QUIC stack
+# (introduced in 3.4), the DTLS retransmission bug, the SSL_set_SSL_CTX() OOB,
+# and the SM2 / EC timing side-channels all live in code that either does not
+# exist or is not present in the 3.3 branch. The OpenSSL Security Advisory
+# (2026-09-29) and NVD CPE ranges confirm 3.3 is unaffected.
+#
+# Additionally, this deployment does NOT use:
+#   - DTLS  (no WebRTC / UDP TLS)        → CVE-2026-84782, CVE-2026-75806
+#   - QUIC / HTTP3 (no QUIC listener)    → CVE-2026-54873, 84784, 75804,
+#                                           42772, 35191
+#   - SM2 or Brainpool curves            → CVE-2026-54875, 54872, 77696
+#   - SSL_set_SSL_CTX() in any app       → CVE-2026-72897
+#   - CMP client revocation              → CVE-2026-75805
+#   - Client-certificate solicitation    → CVE-2026-35189
+#
+# These are false positives: the installed openssl 3.3.7-r2 is not in any
+# affected version range. No base-image upgrade will change this.
+#
+# --- busybox 1.37.0-r3x (Alpine 3.21) ---
+#
+# CVE-2025-60876: BusyBox wget accepts raw CR/LF in the HTTP request-target,
+# enabling header injection. In this image the blocklist download script
+# (generate_ip_blocklists.sh) uses `curl`, not BusyBox wget. No application
+# in the runtime stage invokes BusyBox wget with an attacker-controlled URL.
+# Already accepted as residual risk (Tier 4) in accepted-risks.md.
+#
+# --- python3 3.12.x (Alpine 3.21) ---
+#
+# CVE-2026-119170: CPython FIPS-algorithm enforcement regression. Affects
+# ONLY Python 3.14.10, and only when OpenSSL runs in FIPS mode. This image
+# ships Python 3.12 (Alpine 3.21) and no FIPS OpenSSL provider. Not
+# exploitable in this stack. Already accepted as residual risk (Tier 3).
+#
+# Remove each entry once a corresponding entry in accepted-risks.md is
+# superseded by a remediated base image (if applicable).
+
+ignore:
+  # --- OpenSSL 3.3.7-r2: false positive (branch not affected) ---
+  # Tier 4 — not in any affected OpenSSL version range (3.3 < 3.4 QUIC
+  # introduction; 1.0.2/1.1.1/3.0 are older branches). No base-image
+  # upgrade changes this. See accepted-risks.md.
+  - vulnerability: CVE-2026-84782
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (affects 1.0.2, 1.1.1, 3.0, 3.4, 3.5, 3.6, 4.0). No DTLS in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-75806
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range.
+      No DTLS in deployment. Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-54873
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-84784
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-72897
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (QUIC-era code). No app calls SSL_set_SSL_CTX().
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-75804
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-42772
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-35191
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (QUIC code introduced in 3.5). No QUIC/HTTP3 in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-75805
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (3.4+). No CMP client revocation in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-35189
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (3.4+). No client-certificate solicitation in deployment.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-54875
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (3.4+). No SM2 curves in use; x86_64 not ARM64/RISC-V.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-54872
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (3.4+). No Brainpool/generic-prime EC curves in use.
+      Next review date: 2027-02-14
+
+  - vulnerability: CVE-2026-77696
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: openssl 3.3.7-r2 is not in the affected version range
+      (3.4+). No SM2 signature generation in deployment.
+      Next review date: 2027-02-14
+
+  # --- busybox 1.37.0-r3x: wget header injection ---
+  # Already accepted (Tier 4) in accepted-risks.md. Covers busybox,
+  # busybox-binsh and ssl_client (same CVE id, same apk source).
+  - vulnerability: CVE-2025-60876
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      No patch available in Alpine 3.21. Not exploitable: blocklist
+      downloads use curl, not BusyBox wget; no untrusted-URL wget path.
+      Next review date: 2027-02-14
+
+  # --- python3 3.12.x (Alpine 3.21) ---
+  # Already accepted (Tier 3) in accepted-risks.md.
+  - vulnerability: CVE-2026-119170
+    reason: >
+      Tier 3 - risk accepted, ref guidelines/security/accepted-risks.md.
+      False positive: affects only CPython 3.14.10 in FIPS mode; this image
+      ships Python 3.12 (Alpine 3.21) with no FIPS OpenSSL provider.
+      Next review date: 2027-02-14
