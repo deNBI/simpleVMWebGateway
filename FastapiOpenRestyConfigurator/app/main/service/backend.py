@@ -147,7 +147,9 @@ def extract_proxy_pass(file_path) -> str | None:
     with open(file_path, 'r') as file:
         content = file.read()
 
-    match = re.search(r'proxy_pass\s+(http[^\s;]+);', content)
+    # proxy_pass is written with quotes in the templates, e.g. proxy_pass "http://...";
+    # allow an optional opening quote and strip it on the way out
+    match = re.search(r'proxy_pass\s+"?(http[^\s;"]+)";?', content)
 
     if match:
         return match.group(1)
