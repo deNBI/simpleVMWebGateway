@@ -28,7 +28,7 @@ on:
 # those (which keeps the strict behavior).
 jobs:
   publish:
-    uses: denbi/portal-github-actions/.github/workflows/publish-branch-image.yml@b1a0d8432e7498518ab03848cbbb976f5b64b186 # main
+    uses: denbi/portal-github-actions/.github/workflows/publish-branch-image.yml@eaa336c07d91098d1102c18f6ae7770172e29e6e # main
     with:
       image_name: oci.bi.denbi.de/simplevm/forc
       dockerfile: docker/Dockerfile
