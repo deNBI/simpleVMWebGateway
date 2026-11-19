@@ -33,7 +33,7 @@ jobs:
       image_name: oci.bi.denbi.de/simplevm/forc
       dockerfile: docker/Dockerfile
       RUNS_ON: '["ubuntu-latest"]'
-      fail_on_findings: ${{ inputs.fail_on_findings == '' && true || inputs.fail_on_findings }}
+      fail_on_findings: ${{ inputs.fail_on_findings != false }}
 
     secrets:
       OCI_USERNAME: ${{ secrets.OCI_USERNAME }}
