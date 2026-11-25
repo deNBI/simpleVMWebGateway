@@ -1,7 +1,7 @@
 # --- Build Stage ---
 FROM openresty/openresty:1.31-alpine-slim@sha256:229f4340c7f09f4437e467b42dc1d9d95154e9a6731c036c883db4a65dc704a7 AS build-stage
 
-# Install build-time dependencies
+RUN apk update && apk upgrade --no-cache
 RUN apk add --no-cache \
     bash \
     gcc \
@@ -35,14 +35,14 @@ ENV FORC_BACKEND_PATH=/var/forc/backend_path/
 ENV FORC_TEMPLATE_PATH=/var/forc/template_path/
 ENV PATH="/opt/venv/bin:$PATH"
 
+RUN apk update && apk upgrade --no-cache
+
 # Install runtime-only dependencies
 RUN apk add --no-cache \
     bash \
     curl \
     ca-certificates \
     python3
-
-RUN apk update && apk upgrade --no-cache
 
 # Path Mapping: Link /etc/openresty to the default OpenResty config directory
 # This maintains compatibility with render_nginx.py and scripts
