@@ -5,32 +5,26 @@
 # `package.name` / `package.type`. A match is suppressed only when ALL criteria
 # in a rule are met.
 #
-# --- OpenSSL 3.3.7-r2 (Alpine 3.21) ---
+# The base image is PINNED by digest (openresty/openresty:1.31-alpine-slim@
+# sha256:229f...), which is Alpine 3.24.3, openssl 3.5.9-r1
+# (libcrypto3/libssl3 3.5.9-r0/r1) and python3 3.14.10-r2.
+# Re-verify versions and justifications when the digest is bumped.
 #
-# All 13 OpenSSL CVEs from the 2026-09-29 advisory batch (and the earlier
-# CVE-2026-72897) affect ONLY the following branches:
-#   1.0.2, 1.1.1, 3.0  (older than 3.3)
-#   3.4, 3.5, 3.6, 4.0 (newer than 3.3; QUIC / DTLS-3.3 code lives there)
+# --- OpenSSL (2026-09-29 advisory batch) ---
 #
-# OpenSSL 3.3.x is NOT in any of the affected version ranges. The QUIC stack
-# (introduced in 3.4), the DTLS retransmission bug, the SSL_set_SSL_CTX() OOB,
-# and the SM2 / EC timing side-channels all live in code that either does not
-# exist or is not present in the 3.3 branch. The OpenSSL Security Advisory
-# (2026-09-29) and NVD CPE ranges confirm 3.3 is unaffected.
-#
-# Additionally, this deployment does NOT use:
+# Suppressed on REACHABILITY grounds: the deployment does NOT use
 #   - DTLS  (no WebRTC / UDP TLS)        → CVE-2026-84782, CVE-2026-75806
 #   - QUIC / HTTP3 (no QUIC listener)    → CVE-2026-54873, 84784, 75804,
-#                                           42772, 35191
+#                                           42772, 35191, 72897
 #   - SM2 or Brainpool curves            → CVE-2026-54875, 54872, 77696
 #   - SSL_set_SSL_CTX() in any app       → CVE-2026-72897
 #   - CMP client revocation              → CVE-2026-75805
 #   - Client-certificate solicitation    → CVE-2026-35189
 #
-# These are false positives: the installed openssl 3.3.7-r2 is not in any
-# affected version range. No base-image upgrade will change this.
+# These code paths are never exercised by OpenResty/nginx (TLS over TCP) or
+# the Python service, regardless of the installed openssl branch.
 #
-# --- busybox 1.37.0-r3x (Alpine 3.21) ---
+# --- busybox (Alpine 3.24) ---
 #
 # CVE-2025-60876: BusyBox wget accepts raw CR/LF in the HTTP request-target,
 # enabling header injection. In this image the blocklist download script
@@ -38,113 +32,108 @@
 # in the runtime stage invokes BusyBox wget with an attacker-controlled URL.
 # Already accepted as residual risk (Tier 4) in accepted-risks.md.
 #
-# --- python3 3.12.x (Alpine 3.21) ---
+# --- python3 3.14.10-r2 (Alpine 3.24) ---
 #
 # CVE-2026-119170: CPython FIPS-algorithm enforcement regression. Affects
-# ONLY Python 3.14.10, and only when OpenSSL runs in FIPS mode. This image
-# ships Python 3.12 (Alpine 3.21) and no FIPS OpenSSL provider. Not
-# exploitable in this stack. Already accepted as residual risk (Tier 3).
+# Python 3.14.10 and ONLY when OpenSSL runs in FIPS mode. This image ships
+# Python 3.14.10-r2 but with NO FIPS OpenSSL provider, so the affected code
+# path is unreachable. Already accepted as residual risk (Tier 4).
 #
 # Remove each entry once a corresponding entry in accepted-risks.md is
 # superseded by a remediated base image (if applicable).
 
 ignore:
-  # --- OpenSSL 3.3.7-r2: false positive (branch not affected) ---
-  # Tier 4 — not in any affected OpenSSL version range (3.3 < 3.4 QUIC
-  # introduction; 1.0.2/1.1.1/3.0 are older branches). No base-image
-  # upgrade changes this. See accepted-risks.md.
+  # --- OpenSSL 2026-09-29 batch: not reachable in this deployment ---
+  # Tier 4 — the affected code path (DTLS / QUIC / SM2 / Brainpool /
+  # SSL_set_SSL_CTX / CMP / client-cert solicitation) is never exercised by
+  # OpenResty/nginx (TLS over TCP) or the Python service, regardless of the
+  # installed openssl branch. See accepted-risks.md.
   - vulnerability: CVE-2026-84782
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (affects 1.0.2, 1.1.1, 3.0, 3.4, 3.5, 3.6, 4.0). No DTLS in deployment.
-      Next review date: 2027-02-14
+      Not reachable: DTLS retransmission bug; no DTLS in deployment (TLS
+      over TCP only). Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-75806
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range.
-      No DTLS in deployment. Next review date: 2027-02-14
+      Not reachable: DTLS-only vulnerability; no DTLS in deployment (TLS
+      over TCP only). Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-54873
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
-      Next review date: 2027-02-14
+      Not reachable: QUIC STREAM fragment metadata DoS; no QUIC/HTTP3 in
+      deployment (TLS over TCP / HTTP2 only). Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-84784
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
-      Next review date: 2027-02-14
+      Not reachable: QUIC RETIRE_CONNECTION_ID DoS; no QUIC/HTTP3 in
+      deployment (TLS over TCP / HTTP2 only). Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-72897
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (QUIC-era code). No app calls SSL_set_SSL_CTX().
-      Next review date: 2027-02-14
+      Not reachable: SSL_set_SSL_CTX() OOB during handshake; no app calls
+      SSL_set_SSL_CTX(). Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-75804
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
-      Next review date: 2027-02-14
+      Not reachable: QUIC-only vulnerability; no QUIC/HTTP3 in deployment
+      (TLS over TCP / HTTP2 only). Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-42772
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (QUIC code introduced in 3.4). No QUIC/HTTP3 in deployment.
-      Next review date: 2027-02-14
+      Not reachable: QUIC O(n^2) fragment reassembly CPU DoS; no QUIC/HTTP3
+      in deployment (TLS over TCP / HTTP2 only). Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-35191
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (QUIC code introduced in 3.5). No QUIC/HTTP3 in deployment.
+      Not reachable: QUIC amplification-credit over-accounting; no
+      QUIC/HTTP3 in deployment (TLS over TCP / HTTP2 only).
       Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-75805
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (3.4+). No CMP client revocation in deployment.
+      Not reachable: CMP client revocation; no CMP client in deployment.
       Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-35189
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (3.4+). No client-certificate solicitation in deployment.
+      Not reachable: CRL distribution point memory growth during
+      client-certificate verification; no client-certificate solicitation
+      (ssl_verify_client) is configured in this deployment.
       Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-54875
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (3.4+). No SM2 curves in use; x86_64 not ARM64/RISC-V.
+      Not reachable: SM2 scalar-multiplication side-channel; no SM2 curves
+      in use and deployment runs x86_64 (not ARM64/RISC-V).
       Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-54872
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (3.4+). No Brainpool/generic-prime EC curves in use.
-      Next review date: 2027-02-14
+      Not reachable: generic-prime EC (Brainpool) scalar-multiplication
+      side-channel; only NIST P-256/P-384 curves are in use, which have
+      dedicated constant-time implementations. Next review date: 2027-02-14
 
   - vulnerability: CVE-2026-77696
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: openssl 3.3.7-r2 is not in the affected version range
-      (3.4+). No SM2 signature generation in deployment.
+      Not reachable: SM2 signature-generation side-channel; no SM2 signature
+      generation in deployment (standard ECDSA P-256/P-384 in use).
       Next review date: 2027-02-14
 
   # --- OpenSSL Nov-2026 advisory batches (secadv 20261110/17/24) ---
-  # This image ships openssl 3.5.8-r0 (Alpine 3.24).
+  # This image ships openssl 3.5.9-r1 (Alpine 3.24).
   #
   # CVE-2026-124709, CVE-2026-107494 and CVE-2026-121482: Tier 4 — the
   # vulnerable code does not exist in this branch, or the affected API is
@@ -178,7 +167,7 @@ ignore:
       Next review date: 2027-02-25
 
   # CVE-2026-84786 (NULL deref in non-SMTP DANE clients) affects the
-  # 3.5/4.0/4.1 branches — this image's openssl 3.5.8-r0 is in the range.
+  # 3.5/4.0/4.1 branches — this image's openssl 3.5.9-r1 is in the range.
   # Suppressed on reachability grounds: no DANE/TLSA-enabled TLS clients
   # exist in this deployment.
   - vulnerability: CVE-2026-84786
@@ -190,7 +179,7 @@ ignore:
 
   # CVE-2026-95690 (DTLS reassembly memory exhaustion) and CVE-2026-35190
   # (TLS 1.3 key-share OOB read with Suite B flag) affect the 3.5/4.0/4.1
-  # branches (95690 also 3.0/1.1.1). This image ships openssl 3.5.8-r0
+  # branches (95690 also 3.0/1.1.1). This image ships openssl 3.5.9-r1
   # (Alpine 3.24) — the 3.5 branch IS in the affected range, so these
   # cannot be claimed as version false positives. They are suppressed on
   # reachability grounds instead: no DTLS anywhere in this deployment
@@ -212,23 +201,59 @@ ignore:
       deployment.
       Next review date: 2027-02-25
 
-  # --- busybox 1.37.0-r3x: wget header injection ---
+  # CVE-2026-95692 (AES-GCM-SIV IV length handling) and CVE-2026-88823
+  # (AES-GCM-SIV zero-length AAD reset) only affect applications that call
+  # the AES-GCM-SIV cipher via EVP_CipherInit_ex(). TLS in this deployment
+  # uses standard AES-GCM, not SIV, and no Python or Lua code calls any
+  # AES-GCM-SIV EVP cipher. OpenSSL's advisory: "The OpenSSL TLS and QUIC
+  # implementations do not use this path."
+  - vulnerability: CVE-2026-95692
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: no code in this deployment uses AES-GCM-SIV; TLS uses
+      standard AES-GCM (not SIV). No Python or Lua code calls
+      EVP_CipherInit_ex() with an AES-GCM-SIV cipher.
+      Next review date: 2027-02-25
+
+  - vulnerability: CVE-2026-88823
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: no code in this deployment uses AES-GCM-SIV with
+      chunked (zero-length incremental) AAD; TLS uses standard AES-GCM
+      (not SIV). No Python or Lua code calls the AES-GCM-SIV EVP cipher.
+      Next review date: 2027-02-25
+
+  # CVE-2026-107496 (infinite loop in CMS_encrypt() with EC group order 1)
+  # only affects applications that call CMS_encrypt() / CMS_encrypt_ex()
+  # with an attacker-controlled EC recipient certificate. No code in this
+  # deployment performs CMS/S-MIME encryption. OpenSSL's advisory: "The
+  # OpenSSL TLS and QUIC implementations do not use this path."
+  - vulnerability: CVE-2026-107496
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: no code in this deployment calls CMS_encrypt() or
+      CMS_encrypt_ex(); no S-MIME / CMS encryption exists in this stack.
+      Next review date: 2027-02-25
+
+  # --- busybox (Alpine 3.24): wget header injection ---
   # Already accepted (Tier 4) in accepted-risks.md. Covers busybox,
   # busybox-binsh and ssl_client (same CVE id, same apk source).
   - vulnerability: CVE-2025-60876
     reason: >
       Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
-      No patch available in Alpine 3.21. Not exploitable: blocklist
-      downloads use curl, not BusyBox wget; no untrusted-URL wget path.
-      Next review date: 2027-02-14
+      Not exploitable: blocklist downloads use curl, not BusyBox wget; no
+      untrusted-URL wget path in the runtime stage. No patch yet in
+      Alpine 3.24. Next review date: 2027-02-14
 
-  # --- python3 3.12.x (Alpine 3.21) ---
-  # Already accepted (Tier 3) in accepted-risks.md.
+  # --- python3 3.14.10-r2 (Alpine 3.24) ---
+  # Already accepted (Tier 4) in accepted-risks.md.
   - vulnerability: CVE-2026-119170
     reason: >
-      Tier 3 - risk accepted, ref guidelines/security/accepted-risks.md.
-      False positive: affects only CPython 3.14.10 in FIPS mode; this image
-      ships Python 3.12 (Alpine 3.21) with no FIPS OpenSSL provider.
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: FIPS-algorithm enforcement regression in hashlib;
+      only exploitable when OpenSSL runs in FIPS mode. This image ships
+      Python 3.14.10-r2 (the affected version) but with NO FIPS OpenSSL
+      provider, so the code path is unreachable.
       Next review date: 2027-02-14
 
   # CVE-2026-124249: http.cookiejar deletes cookies of other domains before
