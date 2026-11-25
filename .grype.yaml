@@ -143,6 +143,75 @@ ignore:
       (3.4+). No SM2 signature generation in deployment.
       Next review date: 2027-02-14
 
+  # --- OpenSSL Nov-2026 advisory batches (secadv 20261110/17/24) ---
+  # This image ships openssl 3.5.8-r0 (Alpine 3.24).
+  #
+  # CVE-2026-124709, CVE-2026-107494 and CVE-2026-121482: Tier 4 — the
+  # vulnerable code does not exist in this branch, or the affected API is
+  # never called. The QUIC stack (124709, 107494) lives in the 3.5/4.0/4.1
+  # code but no QUIC/HTTP3 listener is configured in this deployment;
+  # 121482 requires CMS/PKCS#7 verification with CRL checking, which this
+  # app never does. See accepted-risks.md.
+
+  - vulnerability: CVE-2026-124709
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: QUIC-only vulnerability (memory retention in rejected
+      QUIC streams); no QUIC/HTTP3 listener is configured in this
+      deployment (TLS over TCP / HTTP2 only).
+      Next review date: 2027-02-25
+
+  - vulnerability: CVE-2026-107494
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: QUIC-only vulnerability (unbounded
+      RETIRE_CONNECTION_ID frame queue); no QUIC/HTTP3 listener is
+      configured in this deployment (TLS over TCP / HTTP2 only).
+      Next review date: 2027-02-25
+
+  - vulnerability: CVE-2026-121482
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: requires CMS/PKCS#7 SignedData verification with
+      CRL checking enabled (X509_V_FLAG_CRL_CHECK); this app performs no
+      CMS/PKCS#7 verification at all.
+      Next review date: 2027-02-25
+
+  # CVE-2026-84786 (NULL deref in non-SMTP DANE clients) affects the
+  # 3.5/4.0/4.1 branches — this image's openssl 3.5.8-r0 is in the range.
+  # Suppressed on reachability grounds: no DANE/TLSA-enabled TLS clients
+  # exist in this deployment.
+  - vulnerability: CVE-2026-84786
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: no DANE/TLSA-enabled TLS clients in this deployment;
+      the DANE API is never used.
+      Next review date: 2027-02-25
+
+  # CVE-2026-95690 (DTLS reassembly memory exhaustion) and CVE-2026-35190
+  # (TLS 1.3 key-share OOB read with Suite B flag) affect the 3.5/4.0/4.1
+  # branches (95690 also 3.0/1.1.1). This image ships openssl 3.5.8-r0
+  # (Alpine 3.24) — the 3.5 branch IS in the affected range, so these
+  # cannot be claimed as version false positives. They are suppressed on
+  # reachability grounds instead: no DTLS anywhere in this deployment
+  # (TLS over TCP only), and the Suite B certificate flag is not
+  # configured. No app calls the affected APIs.
+  - vulnerability: CVE-2026-95690
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: no DTLS in deployment (TLS over TCP only); the DTLS
+      handshake reassembly code path is never exercised.
+      Next review date: 2027-02-25
+
+  - vulnerability: CVE-2026-35190
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: the CVE only triggers when the Suite B certificate
+      flag (SSL_CERT_FLAG_SUITEB_128_LOS) is set via
+      SSL_CTX_set_cert_flags(); no such flag is configured in this
+      deployment.
+      Next review date: 2027-02-25
+
   # --- busybox 1.37.0-r3x: wget header injection ---
   # Already accepted (Tier 4) in accepted-risks.md. Covers busybox,
   # busybox-binsh and ssl_client (same CVE id, same apk source).
@@ -161,3 +230,43 @@ ignore:
       False positive: affects only CPython 3.14.10 in FIPS mode; this image
       ships Python 3.12 (Alpine 3.21) with no FIPS OpenSSL provider.
       Next review date: 2027-02-14
+
+  # CVE-2026-124249: http.cookiejar deletes cookies of other domains before
+  # policy validation. Only reachable via http.cookiejar.CookieJar with
+  # HTTPCookieProcessor. This app uses no cookie-jar-based HTTP client at
+  # all (no outbound HTTP in the Python code).
+  - vulnerability: CVE-2026-124249
+    package:
+      name: python3
+      type: apk
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: this repo uses no cookie-jar-based HTTP client;
+      no code imports http.cookiejar or urllib.request.
+      Next review date: 2027-02-25
+
+  # CVE-2026-115559: imaplib STARTTLS serves pre-handshake buffered bytes.
+  # This repo does not use imaplib at all.
+  - vulnerability: CVE-2026-115559
+    package:
+      name: python3
+      type: apk
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: this repo does not use imaplib (no IMAP). No code
+      imports imaplib.
+      Next review date: 2027-02-25
+
+  # CVE-2026-19552: ssl.get_server_certificate(ca_certs=...) does not check
+  # hostname identity. Negligible severity (CVSS 0.0). No code in this repo
+  # calls ssl.get_server_certificate().
+  - vulnerability: CVE-2026-19552
+    package:
+      name: python3
+      type: apk
+    reason: >
+      Tier 4 - risk accepted, ref guidelines/security/accepted-risks.md.
+      Not reachable: no code in this repo calls
+      ssl.get_server_certificate(); no ssl-module usage at all in this
+      codebase. Negligible severity (CVSS 0.0).
+      Next review date: 2027-02-25
