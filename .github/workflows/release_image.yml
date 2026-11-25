@@ -5,7 +5,7 @@ on:
       - '*'
 jobs:
   release:
-    uses: denbi/portal-github-actions/.github/workflows/release-image.yml@eaa336c07d91098d1102c18f6ae7770172e29e6e # main
+    uses: denbi/portal-github-actions/.github/workflows/release-image.yml@c2ef513fe071215f735524210227995c59e31293 # main
     with:
       image_name: oci.bi.denbi.de/simplevm/forc
       dockerfile: docker/Dockerfile
